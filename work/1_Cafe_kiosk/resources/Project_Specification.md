@@ -56,6 +56,11 @@
 - **[2026-03-11]** **관리자 통합 관리 및 매출 통계 시스템 완성**
   - 일별 매출 그래프 및 주문 취소 기능 구현 완료
 
+- **[2026-03-11]** **주요 작업 내역**
+   - **최신 DDL 반영**: `ORDER_ITEM` 스냅샷 구조 도입 및 명명 규칙 통일
+   - **문서화**: `Project_Specification.md`에 변경 내역 및 협업 가이드 작성
+   - **공유 완료**: GitHub `feature/cafe-admin` 브랜치 푸시 및 PR 생성 완료
+
 ## 6. 개발 및 협업 가이드 (실행 전 확인)
 1.  **MySQL 설정**: `resources/schema.sql` -> `resources/data.sql` 순서로 실행
 2.  **DB 접속 정보**: `resources/dbinfo.properties` 파일에서 본인의 MySQL 계정/비번 수정
