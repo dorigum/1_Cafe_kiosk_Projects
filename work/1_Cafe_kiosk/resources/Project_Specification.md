@@ -37,9 +37,13 @@
 | :--- | :--- | :--- |
 | **Category** | CATEGORY | 상품 분류 (Coffee, Tea, Dessert 등) |
 | **Product** | MENU | 상품명, 가격, 설명, 품절 여부 |
-| **Option** | OPTION, OPTIONGROUP | 사이즈(Regular/Large), 온도(HOT/ICE) 등 |
-| **Member** | MEMBER | 회원 정보, 포인트 잔액, 역할(USER/ADMIN) |
-| **Order** | ORDERS, ORDERITEM | 주문 총액, 결제 상태, 상세 상품 및 수량 |
+| **Option** | OPTION_GROUP, OPTION | 옵션 그룹(사이즈, 온도 등) 및 세부 옵션 |
+| **Mapping** | MENU_OPTION_GROUP | 메뉴별 적용 가능한 옵션 그룹 매핑 |
+| **Member** | MEMBER | 회원 정보, 휴대폰 번호(Unique), 포인트, 역할 |
+| **Order** | ORDERS | 주문 총액, 사용/적립 포인트, 주문 상태, 주문 일시 |
+| **OrderItem** | ORDER_ITEM | 주문 상세(수량, 단가), 메뉴/카테고리명 스냅샷 포함 |
+| **OrderItemOption**| ORDER_ITEM_OPTION | 주문 시점에 선택된 세부 옵션 기록 |
+| **Wishlist** | WISHLIST | 회원의 찜 목록 |
 
 ## 5. 진행 현황 및 히스토리
 - **[2026-03-11]** **프로젝트 환경 고도화 및 이클립스 최적화**
@@ -57,3 +61,15 @@
 2.  **DB 접속 정보**: `resources/dbinfo.properties` 파일에서 본인의 MySQL 계정/비번 수정
 3.  **라이브러리**: `lib/mysql-connector-j-9.2.0.jar`가 Build Path에 포함되어 있는지 확인
 4.  **인코딩**: 이클립스 실행 설정(Run Configurations)에서 **Encoding을 UTF-8**로 지정 필수
+
+## 7. 협업을 위한 변경사항
+- **최신 DDL 반영 및 테이블 구조 최적화**:
+  - `ORDERITEM` → `ORDER_ITEM`, `OPTIONGROUP` → `OPTION_GROUP` 등 테이블명 명명 규칙 통일 (Snake Case)
+  - `ORDER_ITEM` 테이블에 `menu_name_snapshot`, `category_name_snapshot` 컬럼 추가하여 데이터 정합성 강화 (메뉴명 변경 시에도 과거 주문 내역 보존)
+  - `ORDERS` 테이블의 `ordered_at` → `order_date` 컬럼명 변경
+- **소스 코드 동기화**:
+  - `OrderRepository`, `OrderItem`, `Order` 클래스의 필드 및 SQL 쿼리를 변경된 DDL에 맞춰 전수 업데이트
+  - 인덱스(Index) 설정을 통해 대용량 주문 조회 및 매출 통계 쿼리 성능 최적화
+- **DB 스크립트 현행화**:
+  - 루트의 `ddl.sql` 내용을 `resources/schema.sql`에 반영하여 실행 환경 일치화
+  - 변경된 스키마 구조에 맞춰 샘플 데이터(`data.sql`) 재구성

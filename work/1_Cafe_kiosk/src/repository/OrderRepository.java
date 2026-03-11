@@ -1,5 +1,6 @@
 package repository;
 
+import model.Order;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -24,20 +25,18 @@ public class OrderRepository {
     // 2. 카테고리별 매출 통계
     public Map<String, Integer> getSalesByCategory() {
         Map<String, Integer> stats = new LinkedHashMap<>();
-        String sql = "SELECT c.category_name, SUM(oi.unit_price * oi.quantity) as sales " +
-                     "FROM ORDERITEM oi " +
-                     "JOIN MENU m ON oi.menu_id = m.menu_id " +
-                     "JOIN CATEGORY c ON m.category_id = c.category_id " +
+        String sql = "SELECT category_name_snapshot, SUM(unit_price * quantity) as sales " +
+                     "FROM ORDER_ITEM oi " +
                      "JOIN ORDERS o ON oi.order_id = o.order_id " +
                      "WHERE o.status = 'COMPLETED' " +
-                     "GROUP BY c.category_name " +
+                     "GROUP BY category_name_snapshot " +
                      "ORDER BY sales DESC";
         
         try (Connection conn = DBUtil.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                stats.put(rs.getString("category_name"), rs.getInt("sales"));
+                stats.put(rs.getString("category_name_snapshot"), rs.getInt("sales"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -48,19 +47,18 @@ public class OrderRepository {
     // 3. 인기 메뉴 Top 3 조회
     public List<String> getTopSellingMenus() {
         List<String> topMenus = new ArrayList<>();
-        String sql = "SELECT m.menu_name, SUM(oi.quantity) as total_qty " +
-                     "FROM ORDERITEM oi " +
-                     "JOIN MENU m ON oi.menu_id = m.menu_id " +
+        String sql = "SELECT menu_name_snapshot, SUM(quantity) as total_qty " +
+                     "FROM ORDER_ITEM oi " +
                      "JOIN ORDERS o ON oi.order_id = o.order_id " +
                      "WHERE o.status = 'COMPLETED' " +
-                     "GROUP BY m.menu_name " +
+                     "GROUP BY menu_name_snapshot " +
                      "ORDER BY total_qty DESC LIMIT 3";
         
         try (Connection conn = DBUtil.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                topMenus.add(String.format("%-15s | %d개 판매", rs.getString("menu_name"), rs.getInt("total_qty")));
+                topMenus.add(String.format("%-15s | %d개 판매", rs.getString("menu_name_snapshot"), rs.getInt("total_qty")));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -71,16 +69,16 @@ public class OrderRepository {
     // 4. 일별 매출 데이터 추출 (최근 7일)
     public Map<String, Integer> getDailySales() {
         Map<String, Integer> stats = new LinkedHashMap<>();
-        String sql = "SELECT DATE(ordered_at) as order_date, SUM(total_amount) as daily_total " +
+        String sql = "SELECT DATE(order_date) as o_date, SUM(total_amount) as daily_total " +
                      "FROM ORDERS WHERE status = 'COMPLETED' " +
-                     "GROUP BY DATE(ordered_at) " +
-                     "ORDER BY order_date ASC LIMIT 7";
+                     "GROUP BY DATE(order_date) " +
+                     "ORDER BY o_date ASC LIMIT 7";
         
         try (Connection conn = DBUtil.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                stats.put(rs.getString("order_date"), rs.getInt("daily_total"));
+                stats.put(rs.getString("o_date"), rs.getInt("daily_total"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -95,7 +93,7 @@ public class OrderRepository {
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setLong(1, orderId);
             int affected = pstmt.executeUpdate();
-            return affected > 0; // 업데이트된 행이 있으면 성공
+            return affected > 0;
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -103,16 +101,22 @@ public class OrderRepository {
     }
 
     // 6. 모든 주문 목록 조회 (취소용)
-    public List<String> getAllOrders() {
-        List<String> orders = new ArrayList<>();
-        String sql = "SELECT order_id, total_amount, status, ordered_at FROM ORDERS ORDER BY ordered_at DESC";
+    public List<Order> getAllOrders() {
+        List<Order> orders = new ArrayList<>();
+        String sql = "SELECT * FROM ORDERS ORDER BY order_date DESC";
         try (Connection conn = DBUtil.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                orders.add(String.format("ID: %d | 금액: %d | 상태: %s | 일시: %s", 
-                        rs.getLong("order_id"), rs.getInt("total_amount"), 
-                        rs.getString("status"), rs.getTimestamp("ordered_at")));
+                orders.add(new Order(
+                    rs.getLong("order_id"),
+                    rs.getLong("member_id"),
+                    rs.getInt("total_amount"),
+                    rs.getInt("point_used"),
+                    rs.getInt("point_earned"),
+                    rs.getString("status"),
+                    rs.getTimestamp("order_date")
+                ));
             }
         } catch (SQLException e) {
             e.printStackTrace();

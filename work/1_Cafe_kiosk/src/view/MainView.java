@@ -2,7 +2,7 @@ package view;
 
 import controller.AdminController;
 import model.Member;
-import repository.ProductRepository;
+import repository.MenuRepository;
 import service.AdminService;
 import service.MemberService;
 import java.util.Scanner;
@@ -18,23 +18,22 @@ public class MainView {
             e.printStackTrace();
         }
 
-        ProductRepository productRepository = new ProductRepository();
-        AdminService adminService = new AdminService(productRepository);
+        MenuRepository menuRepository = new MenuRepository();
+        AdminService adminService = new AdminService(menuRepository);
         AdminController adminController = new AdminController(adminService);
         MemberService memberService = new MemberService();
 
-        // [강제 설정] 입력(Scanner)을 UTF-8로 읽도록 고정
         Scanner scanner = new Scanner(System.in, "UTF-8");
 
         while (true) {
-            System.out.println("\n[카페 키오스크 - UTF8 모드]");
+            System.out.println("\n[카페 키오스크 - New DB 모드]");
             System.out.println("1. 회원 로그인 및 주문 내역 조회");
             System.out.println("2. 비회원 주문 (준비 중)");
-            System.out.println("3. 관리자 모드 (상품 관리)");
+            System.out.println("3. 관리자 모드 (카테고리/메뉴/통계)");
             System.out.println("0. 종료");
             System.out.print("메뉴 선택: ");
             
-            String input = scanner.nextLine(); // 버퍼 문제 방지를 위해 nextLine으로 통일
+            String input = scanner.nextLine();
             int mode;
             try {
                 mode = Integer.parseInt(input);
@@ -43,12 +42,19 @@ public class MainView {
             }
 
             if (mode == 1) {
-                System.out.print("휴대폰 번호 (예: 010-1234-5678): ");
-                String phone = scanner.nextLine();
+                System.out.print("회원 번호 (ID): ");
+                long memberId;
+                try {
+                    memberId = Long.parseLong(scanner.nextLine());
+                } catch (NumberFormatException e) {
+                    System.out.println("숫자로 된 회원 번호를 입력해 주세요.");
+                    continue;
+                }
+                
                 System.out.print("비밀번호: ");
                 String password = scanner.nextLine();
 
-                Member loggedInMember = memberService.login(phone, password);
+                Member loggedInMember = memberService.login(memberId, password);
                 if (loggedInMember != null) {
                     System.out.println("\n--- 내 정보 ---");
                     System.out.println(loggedInMember);

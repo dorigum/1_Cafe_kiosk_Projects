@@ -1,27 +1,26 @@
 package repository;
 
 import model.Member;
-import model.OrderHistory;
+import model.OrderItem;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MemberRepository {
 
-    // 1. 로그인 확인 (휴대폰 번호와 비밀번호로 조회)
-    public Member login(String phone, String password) {
-        String sql = "SELECT * FROM MEMBER WHERE phone = ? AND password = ?";
+    // 1. 로그인 확인 (회원번호와 비밀번호로 조회)
+    public Member login(long memberId, String password) {
+        String sql = "SELECT * FROM MEMBER WHERE member_id = ? AND password = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            pstmt.setString(1, phone);
+            pstmt.setLong(1, memberId);
             pstmt.setString(2, password);
             
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     return new Member(
                         rs.getLong("member_id"),
-                        rs.getString("phone"),
                         rs.getString("password"),
                         rs.getInt("age"),
                         rs.getInt("point_balance"),
@@ -36,15 +35,13 @@ public class MemberRepository {
         return null;
     }
 
-    // 2. 특정 회원의 주문 내역 조회 (JOIN 쿼리 사용)
-    public List<OrderHistory> getOrderHistory(long memberId) {
-        List<OrderHistory> historyList = new ArrayList<>();
-        String sql = "SELECT o.order_id, m.menu_name, oi.quantity, oi.unit_price, o.total_amount, o.ordered_at, o.status " +
-                     "FROM ORDERS o " +
-                     "JOIN ORDERITEM oi ON o.order_id = oi.order_id " +
-                     "JOIN MENU m ON oi.menu_id = m.menu_id " +
+    // 2. 특정 회원의 주문 내역 상세 조회
+    public List<OrderItem> getOrderHistory(long memberId) {
+        List<OrderItem> historyList = new ArrayList<>();
+        String sql = "SELECT oi.* FROM ORDER_ITEM oi " +
+                     "JOIN ORDERS o ON oi.order_id = o.order_id " +
                      "WHERE o.member_id = ? " +
-                     "ORDER BY o.ordered_at DESC";
+                     "ORDER BY o.order_date DESC";
         
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -52,14 +49,14 @@ public class MemberRepository {
             pstmt.setLong(1, memberId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    historyList.add(new OrderHistory(
+                    historyList.add(new OrderItem(
+                        rs.getLong("order_item_id"),
                         rs.getLong("order_id"),
-                        rs.getString("menu_name"),
+                        rs.getLong("menu_id"),
                         rs.getInt("quantity"),
                         rs.getInt("unit_price"),
-                        rs.getInt("total_amount"),
-                        rs.getTimestamp("ordered_at"),
-                        rs.getString("status")
+                        rs.getString("menu_name_snapshot"),
+                        rs.getString("category_name_snapshot")
                     ));
                 }
             }
@@ -79,7 +76,6 @@ public class MemberRepository {
             while (rs.next()) {
                 members.add(new Member(
                     rs.getLong("member_id"),
-                    rs.getString("phone"),
                     rs.getString("password"),
                     rs.getInt("age"),
                     rs.getInt("point_balance"),

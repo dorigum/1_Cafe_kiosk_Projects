@@ -1,5 +1,6 @@
 package repository;
 
+import model.Category;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,15 +19,18 @@ public class CategoryRepository {
         }
     }
 
-    // 카테고리 목록 조회
-    public List<String> getAllCategories() {
-        List<String> categories = new ArrayList<>();
+    // 카테고리 목록 조회 (Category 모델 리스트 반환으로 변경)
+    public List<Category> getAllCategories() {
+        List<Category> categories = new ArrayList<>();
         String sql = "SELECT * FROM CATEGORY ORDER BY category_id";
         try (Connection conn = DBUtil.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                categories.add(rs.getInt("category_id") + ". " + rs.getString("category_name"));
+                categories.add(new Category(
+                    rs.getInt("category_id"),
+                    rs.getString("category_name")
+                ));
             }
         } catch (SQLException e) {
             e.printStackTrace();
