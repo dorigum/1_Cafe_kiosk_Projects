@@ -46,7 +46,18 @@ public class MemberServiceImpl implements MemberService {
 			throw new ValidationException("비밀번호는 비어 있을 수 없습니다.");
 		}
 
-		Member member = memberRepository.login(phone.trim(), password);
+		// 전화번호 정규화: 하이픈 제거 후 숫자만 추출
+		String digitsOnly = phone.replaceAll("[^0-9]", "");
+		
+		// 01012345678 형식을 010-1234-5678 형식으로 변환 (DB 저장 형식에 맞춤)
+		String normalizedPhone = digitsOnly;
+		if (digitsOnly.length() == 11) {
+			normalizedPhone = digitsOnly.substring(0, 3) + "-" + 
+			                  digitsOnly.substring(3, 7) + "-" + 
+			                  digitsOnly.substring(7);
+		}
+
+		Member member = memberRepository.login(normalizedPhone, password);
 		if (member == null) {
 			throw new BusinessRuleException("전화번호 또는 비밀번호가 일치하지 않습니다.");
 		}

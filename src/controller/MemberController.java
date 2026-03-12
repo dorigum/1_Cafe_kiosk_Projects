@@ -17,6 +17,15 @@ public class MemberController {
 		this.memberService = memberService;
 	}
 
+	public void register(String phone, String password, int age) {
+		try {
+			memberService.register(phone, password, age);
+			EndView.success("회원가입이 완료되었습니다!");
+		} catch (CafeKioskException e) {
+			FailView.fail(e.getMessage());
+		}
+	}
+
 	public Member login(String phone, String password) {
 		try {
 			Member member = memberService.login(phone, password);

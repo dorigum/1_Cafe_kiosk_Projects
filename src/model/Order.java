@@ -31,6 +31,16 @@ public class Order {
 
     @Override
     public String toString() {
-        return String.format("주문번호: %d | 총액: %d | 상태: %s | 일시: %s", orderId, totalAmount, status, orderDate);
+        String mark = "[ ]";
+        if ("CANCELLED".equals(status)) {
+            mark = "[X]";
+        } else if ("COMPLETED".equals(status)) {
+            mark = "[V]";
+        }
+        
+        String memberInfo = (memberId > 0) ? String.valueOf(memberId) : "비회원";
+        
+        return String.format("%s 주문번호: %d | 주문자(ID): %s | 총액: %,d원 | 상태: %-10s | 주문일시: %s", 
+                mark, orderId, memberInfo, totalAmount, status, orderDate);
     }
 }

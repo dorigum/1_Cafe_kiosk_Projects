@@ -11,7 +11,7 @@ public class MemberRepositoryImpl implements MemberRepository {
 
 	// 로그인 - phone으로
 	public Member login(String phone, String password) {
-		String sql = "SELECT * FROM MEMBER WHERE phone = ? AND password = ?";
+		String sql = "SELECT * FROM MEMBER WHERE phone = ? AND password = BINARY ?";
 		try (Connection conn = DBUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, phone);
 			pstmt.setString(2, password);

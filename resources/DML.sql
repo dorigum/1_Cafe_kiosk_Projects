@@ -1,5 +1,14 @@
+use kiosk;
+
+SELECT * FROM MEMBER;
+SELECT * FROM CATEGORY ORDER BY CATEGORY_ID;
+SELECT * FROM MENU;
+
+DELETE FROM CATEGORY;
+DELETE FROM MENU;
+
 -- 1. MEMBER 데이터
-INSERT INTO `MEMBER` (phone, password, age, point_balance, role) VALUES 
+INSERT INTO MEMBER (phone, password, age, point_balance, role) VALUES 
 ('010-1234-5678', 'admin123', 30, 0, 'ADMIN'),
 ('010-1111-2222', 'user123', 25, 500, 'USER'),
 ('010-3333-4444', 'user456', 22, 1200, 'USER');

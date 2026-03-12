@@ -41,4 +41,6 @@ public interface AdminService {
     List<String> getTopSellingMenus();
 
     Map<String, Integer> getDailySales();
+
+    Map<String, Integer> getSalesByPeriod(String format);
 }

@@ -71,7 +71,7 @@ public class AdminServiceImpl implements AdminService {
 
         Category category = categoryRepository.getCategoryById(categoryId);
         if (category == null) {
-            throw new NotFoundException("존재하지 않는 카테고리입니다.");
+            throw new NotFoundException("존재하지 않는 카테고리 ID입니다. 다시 입력해주세요.");
         }
 
         Menu menu = new Menu(categoryId, name.trim(), price, description == null ? "" : description.trim());
@@ -156,5 +156,9 @@ public class AdminServiceImpl implements AdminService {
 
     public Map<String, Integer> getDailySales() {
         return orderRepository.getDailySales();
+    }
+
+    public Map<String, Integer> getSalesByPeriod(String format) {
+        return orderRepository.getSalesByPeriod(format);
     }
 }

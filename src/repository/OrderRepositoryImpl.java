@@ -67,26 +67,32 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     public Map<String, Integer> getDailySales() {
+        return getSalesByPeriod("%Y-%m-%d");
+    }
+
+    public Map<String, Integer> getSalesByPeriod(String format) {
         Map<String, Integer> stats = new LinkedHashMap<>();
-        String sql = "SELECT DATE(order_date) as o_date, SUM(total_amount) as daily_total "
+        String sql = "SELECT DATE_FORMAT(order_date, ?) as period, SUM(total_amount) as total "
                      + "FROM ORDERS WHERE status = 'COMPLETED' "
-                     + "GROUP BY DATE(order_date) "
-                     + "ORDER BY o_date ASC LIMIT 7";
+                     + "GROUP BY period "
+                     + "ORDER BY period ASC LIMIT 10";
 
         try (Connection conn = DBUtil.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            while (rs.next()) {
-                stats.put(rs.getString("o_date"), rs.getInt("daily_total"));
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, format);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    stats.put(rs.getString("period"), rs.getInt("total"));
+                }
             }
             return stats;
         } catch (SQLException e) {
-            throw new RepositoryException("일별 매출 조회 중 오류가 발생했습니다.", e);
+            throw new RepositoryException("기간별 매출 조회 중 오류가 발생했습니다.", e);
         }
     }
 
     public boolean cancelOrder(long orderId) {
-        String sql = "UPDATE ORDERS SET status = 'CANCELLED' WHERE order_id = ? AND status = 'COMPLETED'";
+        String sql = "UPDATE ORDERS SET status = 'CANCELLED' WHERE order_id = ? AND status != 'CANCELLED'";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setLong(1, orderId);

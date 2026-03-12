@@ -69,39 +69,67 @@ public final class EndView {
     }
 
     public static void printLoginSuccess(Member member) {
-        System.out.println("\n로그인 성공! 환영합니다, " + member.getPhone() + "님.");
-        System.out.printf("보유 포인트: %,d원\n", member.getPointBalance());
+        if ("ADMIN".equals(member.getRole())) {
+            System.out.println("\n[관리자 모드] 환영합니다, " + member.getPhone() + " 관리자님.");
+        } else {
+            System.out.println("\n로그인 성공! 환영합니다, " + member.getPhone() + "님.");
+            System.out.printf("보유 포인트: %,d원\n", member.getPointBalance());
+        }
     }
 
-    public static void printSalesReport(int totalSales, Map<String, Integer> dailySales,
-                                       Map<String, Integer> categorySales, List<String> topMenus) {
-        System.out.println("\n===== [매출 통계 리포트] =====");
+    public static void printDateSalesReport(String periodTitle, int totalSales, Map<String, Integer> periodSales) {
+        System.out.println("\n" + "=".repeat(40));
+        System.out.println("      📅 [" + periodTitle + "]      ");
+        System.out.println("=".repeat(40));
         System.out.printf("▶ 누적 총 매출액: %,d원\n", totalSales);
+        System.out.println("-".repeat(40));
 
-        System.out.println("\n[일별 매출 추이 (최근 7일)]");
-        if (dailySales == null || dailySales.isEmpty()) {
-            System.out.println("- 데이터 없음");
+        if (periodSales == null || periodSales.isEmpty()) {
+            System.out.println("  - 데이터 없음");
         } else {
-            dailySales.forEach((date, sales) -> {
-                int barLength = Math.min(20, Math.max(0, sales / 1000));
-                String bar = "#".repeat(barLength);
-                System.out.printf("%s | %-20s (%,d원)\n", date, bar, sales);
+            periodSales.forEach((period, sales) -> {
+                int barLength = Math.min(30, Math.max(0, sales / 2000));
+                String bar = "■".repeat(barLength);
+                System.out.printf("%12s | %-30s (%,d원)\n", period, bar, sales);
             });
         }
+        System.out.println("=".repeat(40));
+    }
 
-        System.out.println("\n[카테고리별 매출 현황]");
+    public static void printCategorySalesReport(Map<String, Integer> categorySales) {
+        System.out.println("\n" + "=".repeat(40));
+        System.out.println("      📂 [카테고리별 매출 분석]      ");
+        System.out.println("=".repeat(40));
+
         if (categorySales == null || categorySales.isEmpty()) {
-            System.out.println("- 데이터 없음");
+            System.out.println("  - 데이터 없음");
         } else {
-            categorySales.forEach((cat, sales) -> System.out.printf("- %-10s: %,d원\n", cat, sales));
+            int total = categorySales.values().stream().mapToInt(Integer::intValue).sum();
+            categorySales.forEach((cat, sales) -> {
+                double percent = (total > 0) ? (sales * 100.0 / total) : 0;
+                int barLength = (int) (percent / 3);
+                String bar = "■".repeat(barLength);
+                System.out.printf("  %-10s: %,10d원 (%5.1f%%) %s\n", cat, sales, percent, bar);
+            });
+            System.out.println("-".repeat(40));
+            System.out.printf("  합계      : %,10d원 (100.0%%)\n", total);
         }
+        System.out.println("=".repeat(40));
+    }
 
-        System.out.println("\n[인기 메뉴 Top 3]");
+    public static void printMenuSalesReport(List<String> topMenus) {
+        System.out.println("\n" + "=".repeat(40));
+        System.out.println("      🏆 [메뉴별 판매 순위]      ");
+        System.out.println("=".repeat(40));
+
         if (topMenus == null || topMenus.isEmpty()) {
-            System.out.println("- 데이터 없음");
+            System.out.println("  - 데이터 없음");
         } else {
-            topMenus.forEach(menu -> System.out.println("- " + menu));
+            for (int i = 0; i < topMenus.size(); i++) {
+                System.out.printf("  %2d위. %s\n", i + 1, topMenus.get(i));
+            }
         }
+        System.out.println("=".repeat(40));
     }
 
     public static void printList(String title, List<?> list, String emptyMessage) {

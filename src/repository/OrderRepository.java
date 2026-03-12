@@ -14,6 +14,8 @@ public interface OrderRepository {
 
     Map<String, Integer> getDailySales();
 
+    Map<String, Integer> getSalesByPeriod(String format);
+
     boolean cancelOrder(long orderId);
 
     List<Order> getAllOrders();
