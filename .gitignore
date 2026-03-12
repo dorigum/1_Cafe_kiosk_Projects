@@ -14,3 +14,5 @@ desktop.ini
 *.log
 
 dbinfo.properties
+
+.vscode
