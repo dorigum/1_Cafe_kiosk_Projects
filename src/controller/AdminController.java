@@ -103,17 +103,21 @@ public class AdminController {
             String sub = scanner.nextLine();
 
             if ("1".equals(sub)) {
-                System.out.println("\n[현재 카테고리 목록]");
-                adminService.getCategoryList().forEach(System.out::println);
-                System.out.print("카테고리 ID: ");
-                int catId = Integer.parseInt(scanner.nextLine());
-                System.out.print("메뉴명: ");
-                String name = scanner.nextLine();
-                System.out.print("가격: ");
-                int price = Integer.parseInt(scanner.nextLine());
-                System.out.print("설명: ");
-                String desc = scanner.nextLine();
-                adminService.registerMenu(catId, name, price, desc);
+                try {
+                    System.out.println("\n[현재 카테고리 목록]");
+                    adminService.getCategoryList().forEach(System.out::println);
+                    System.out.print("카테고리 ID: ");
+                    int catId = Integer.parseInt(scanner.nextLine());
+                    System.out.print("메뉴명: ");
+                    String name = scanner.nextLine();
+                    System.out.print("가격: ");
+                    int price = Integer.parseInt(scanner.nextLine());
+                    System.out.print("설명: ");
+                    String desc = scanner.nextLine();
+                    adminService.registerMenu(catId, name, price, desc);
+                } catch (NumberFormatException e) {
+                    System.out.println("잘못된 숫자 형식입니다. 다시 입력해 주세요.");
+                }
             } else if ("2".equals(sub)) {
                 System.out.print("삭제할 메뉴 ID: ");
                 try {
