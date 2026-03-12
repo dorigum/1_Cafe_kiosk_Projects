@@ -3,8 +3,11 @@ package view;
 import controller.AdminController;
 import model.Member;
 import repository.MenuRepository;
+import repository.MenuRepositoryImpl;
 import service.AdminService;
+import service.AdminServiceImpl;
 import service.MemberService;
+import service.MemberServiceImpl;
 import java.util.Scanner;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
@@ -18,10 +21,10 @@ public class MainView {
             e.printStackTrace();
         }
 
-        MenuRepository menuRepository = new MenuRepository();
-        AdminService adminService = new AdminService(menuRepository);
+        MenuRepository menuRepository = new MenuRepositoryImpl();
+        AdminService adminService = new AdminServiceImpl(menuRepository);
         AdminController adminController = new AdminController(adminService);
-        MemberService memberService = new MemberService();
+        MemberService memberService = new MemberServiceImpl();
 
         Scanner scanner = new Scanner(System.in, "UTF-8");
 
