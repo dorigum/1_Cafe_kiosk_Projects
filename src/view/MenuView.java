@@ -2,22 +2,29 @@ package view;
 
 import controller.AdminController;
 import controller.MemberController;
+import controller.MenuController;
 import model.Member;
-
+import model.Menu;
+import model.OrderItem;
+import model.OptionGroup;
+import model.Option;
 import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MenuView {
 	private static final Scanner scanner = new Scanner(System.in, "UTF-8");
 
-	public void run(AdminController adminController, MemberController memberController) {
+	public void run(AdminController adminController, MemberController memberController,
+			MenuController menuController) {
 		while (true) {
 			printMainMenu();
 			int choice = readInt("메뉴 선택: ");
 
 			if (choice == 1) {
-				runMemberFlow(memberController);
+				runMemberFlow(memberController, menuController);
 			} else if (choice == 2) {
-				EndView.success("준비 중인 서비스입니다.");
+				runMenuFlow(menuController, null); // 비회원 주문
 			} else if (choice == 3) {
 				runAdminFlow(adminController, memberController);
 			} else if (choice == 0) {
@@ -34,7 +41,7 @@ public class MenuView {
 		scanner.close();
 	}
 
-	private void runMemberFlow(MemberController memberController) {
+	private void runMemberFlow(MemberController memberController, MenuController menuController) {
 
 		// 회원가입 or 로그인 선택
 		System.out.println("\n1. 로그인");
@@ -66,6 +73,7 @@ public class MenuView {
 			System.out.println("\n1. 주문 내역 보기");
 			System.out.println("2. 찜 목록 보기");
 			System.out.println("3. 퀵오더 (최근 주문 바로 주문)");
+			System.out.println("4. 주문하기 (메뉴판 보기)");
 			System.out.println("0. 로그아웃");
 			int sub = readInt("선택: ");
 
@@ -75,11 +83,119 @@ public class MenuView {
 				memberController.showWishlist(member);
 			} else if (sub == 3) {
 				memberController.showQuickOrder(member);
+			} else if (sub == 4) {
+				runMenuFlow(menuController, member);
 			} else if (sub == 0) {
 				EndView.success("로그아웃 되었습니다.");
 				break;
 			} else {
 				FailView.fail("잘못된 선택입니다.");
+			}
+		}
+	}
+
+	private void runMenuFlow(MenuController menuController, Member member) {
+		List<OrderItem> cart = new ArrayList<>();
+		while (true) {
+			System.out.println("\n--- [메뉴 카테고리] ---");
+			System.out.println("1. 인기 상품");
+			System.out.println("2. 신상품");
+			System.out.println("3. 커피");
+			System.out.println("4. 논커피");
+			System.out.println("5. 디저트");
+			System.out.println("8. 카트확인");
+			System.out.println("9. 주문하기");
+			System.out.println("0. 뒤로가기");
+			int sub = readInt("선택: ");
+
+			List<Menu> menus = null;
+			if (sub == 1) {
+				menus = menuController.getPopularMenuList();
+			} else if (sub == 2) {
+				menus = menuController.getLatestMenuList();
+			} else if (sub == 3) {
+				menus = menuController.getCoffeeMenuList();
+			} else if (sub == 4) {
+				menus = menuController.getNonCoffeeMenuList();
+			} else if (sub == 5) {
+				menus = menuController.getDesertMenuList();
+			} else if (sub == 8) {
+				EndView.printCart(cart);
+			} else if (sub == 9) {
+				runOrderFlow(menuController, cart, member);
+				break; // 주문 완료 시 메뉴 플로우 탈출
+			} else if (sub == 0) {
+				break;
+			} else {
+				FailView.fail("잘못된 선택입니다.");
+			}
+			if (menus != null) {
+				cart = runMenuSelectFlow(menuController, menus, cart, member);
+			}
+		}
+	}
+
+	private List<OrderItem> runMenuSelectFlow(MenuController menuController, List<Menu> menus,
+			List<OrderItem> cart, Member member) {
+		EndView.printMenu(menus);
+		while (true) {
+			int menuChoice = readInt("메뉴 선택 (0. 뒤로): ");
+			if (menuChoice == 0) break;
+			if (menuChoice < 1 || menuChoice > menus.size()) {
+				FailView.fail("올바른 번호를 선택해주세요.");
+				continue;
+			}
+			
+			Menu selectedMenu = menus.get(menuChoice - 1);
+			List<OptionGroup> optionGroups = menuController.getOptionGroups(selectedMenu);
+			List<Option> selectedOptions = new ArrayList<>();
+			boolean optionSelectCancled = false;
+			
+			for (OptionGroup optionGroup : optionGroups) {
+				EndView.printOptionGroup(optionGroup);
+				List<Option> options = menuController.getOptions(optionGroup);
+
+				int optionChoice = readInt("옵션 선택 (0. 뒤로): ");
+				if (optionChoice == 0) {
+					optionSelectCancled = true;
+					break;
+				}
+				if (optionChoice < 1 || optionChoice > options.size()) {
+					FailView.fail("올바른 옵션을 선택해주세요.");
+					optionSelectCancled = true; // 편의상 취소 처리
+					break;
+				}
+				selectedOptions.add(options.get(optionChoice - 1));
+			}
+			
+			if (optionSelectCancled) break;
+			
+			int quantity = readInt("개수 선택 (0. 뒤로): ");
+			if (quantity <= 0) break;
+
+			String categorySnapshot = menuController.getCategoryName(selectedMenu);
+			cart.add(new OrderItem(0, 0, selectedMenu.getMenuId(), quantity, selectedMenu.getPrice(), 
+					selectedMenu.getMenuName(), categorySnapshot, selectedOptions));
+			System.out.println("장바구니에 담겼습니다.");
+		}
+		return cart;
+	}
+
+	private void runOrderFlow(MenuController menuController, List<OrderItem> cart, Member member) {
+		if (cart.isEmpty()) {
+			FailView.fail("장바구니가 비어 있습니다.");
+			return;
+		}
+		
+		EndView.printCart(cart);
+		int sub = readInt("주문하시겠습니까? 1. 주문, 0. 뒤로: ");
+		if (sub == 1) {
+			int result = menuController.order(cart, member);
+			if (result == 1) {
+				EndView.success("주문이 완료되었습니다.");
+				cart.clear();
+			} else {
+				FailView.fail("주문에 실패했습니다.");
 			}
 		}
 	}
@@ -91,9 +207,7 @@ public class MenuView {
 		
 		Member admin = memberController.login(phone, password);
 		
-		if (admin == null) {
-			return; // 로그인 실패
-		}
+		if (admin == null) return;
 		
 		if (!"ADMIN".equals(admin.getRole())) {
 			FailView.fail("관리자 권한이 없습니다.");
@@ -172,9 +286,8 @@ public class MenuView {
 					String description = readText("설명: ");
 					
 					if (adminController.registerMenu(categoryId, name, price, description)) {
-						break; // 등록 성공 시 루프 탈출
+						break;
 					}
-					// 실패 시 다시 루프 처음으로 돌아가서 목록 보여주고 입력 받음
 				}
 			} else if (sub == 2) {
 				long menuId = readLong("삭제할 메뉴 ID: ");
@@ -267,7 +380,7 @@ public class MenuView {
 	private void printMainMenu() {
 		System.out.println("\n[카페 키오스크 - New DB 모드]");
 		System.out.println("1. 회원 로그인 및 주문 내역 조회");
-		System.out.println("2. 비회원 주문 (준비 중)");
+		System.out.println("2. 비회원 주문");
 		System.out.println("3. 관리자 모드 (카테고리/메뉴/통계)");
 		System.out.println("0. 종료");
 	}

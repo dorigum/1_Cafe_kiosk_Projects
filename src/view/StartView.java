@@ -5,9 +5,11 @@ import java.io.UnsupportedEncodingException;
 
 import controller.AdminController;
 import controller.MemberController;
+import controller.MenuController;
 import exception.InfrastructureException;
 import service.AdminServiceImpl;
 import service.MemberServiceImpl;
+import service.MenuServiceImpl;
 
 public class StartView {
 	public static void main(String[] args) {
@@ -20,8 +22,9 @@ public class StartView {
 		MenuView menuView = new MenuView();
 		AdminController adminController = new AdminController(new AdminServiceImpl());
 		MemberController memberController = new MemberController(new MemberServiceImpl());
+		MenuController menuController = new MenuController(new MenuServiceImpl());
 
-		menuView.run(adminController, memberController);
+		menuView.run(adminController, memberController, menuController);
 	}
 
 	public static void closeScanner() {
