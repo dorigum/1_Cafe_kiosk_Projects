@@ -214,14 +214,12 @@ public class MenuView {
 			return;
 		}
 
-		EndView.success(admin.getPhone() + " 관리자님, 환영합니다.");
-
 		while (true) {
 			System.out.println("\n===== [관리자 통합 관리 모드] =====");
 			System.out.println("1. 카테고리 관리 (CRUD)");
 			System.out.println("2. 메뉴 관리 (CRUD)");
 			System.out.println("3. 회원 관리 (조회/삭제)");
-			System.out.println("4. 주문 관리 (취소)");
+			System.out.println("4. 주문 관리 (조회/삭제)");
 			System.out.println("5. 매출 통계 및 그래프 조회");
 			System.out.println("0. 메인 메뉴로 돌아가기");
 
@@ -323,7 +321,7 @@ public class MenuView {
 			System.out.println("\n--- [전체 주문 목록] ---");
 			adminController.listOrders();
 
-			System.out.println("\n1. 주문 취소 | 0. 뒤로");
+			System.out.println("\n1. 주문 취소(삭제) | 0. 뒤로");
 			int sub = readInt("선택: ");
 
 			if (sub == 1) {
