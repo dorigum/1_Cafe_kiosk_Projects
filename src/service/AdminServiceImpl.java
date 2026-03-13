@@ -205,4 +205,19 @@ public class AdminServiceImpl implements AdminService {
     public Map<String, Integer> getSalesByPeriod(String format) {
         return orderRepository.getSalesByPeriod(format);
     }
+
+    @Override
+    public Map<String, Object> getSalesStatsByPeriod(String startDate, String endDate) {
+        return orderRepository.getSalesStatsByPeriod(startDate, endDate);
+    }
+
+    @Override
+    public Map<Integer, Integer> getHourlySales() {
+        return orderRepository.getHourlySales();
+    }
+
+    @Override
+    public List<Map<String, Object>> getTopSpenders(int limit) {
+        return orderRepository.getTopSpenders(limit);
+    }
 }

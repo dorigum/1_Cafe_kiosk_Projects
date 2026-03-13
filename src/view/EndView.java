@@ -133,6 +133,64 @@ public final class EndView {
         System.out.println("=".repeat(40));
     }
 
+    public static void printDetailedPeriodReport(String start, String end, Map<String, Object> stats) {
+        System.out.println("\n" + "=".repeat(40));
+        System.out.println("      📅 [기간별 상세 매출 내역]      ");
+        System.out.println("=".repeat(40));
+        System.out.printf("▶ 기간: %s ~ %s\n", start, end);
+        System.out.println("-".repeat(40));
+        
+        if (stats == null || stats.isEmpty()) {
+            System.out.println("  - 해당 기간의 데이터가 없습니다.");
+        } else {
+            System.out.printf("  총 주문 건수 : %,d건\n", (Integer) stats.getOrDefault("count", 0));
+            System.out.printf("  총 매출 금액 : %,d원\n", (Integer) stats.getOrDefault("amount", 0));
+            int count = (Integer) stats.getOrDefault("count", 0);
+            int amount = (Integer) stats.getOrDefault("amount", 0);
+            if (count > 0) {
+                System.out.printf("  객단가(AVG) : %,d원\n", amount / count);
+            }
+        }
+        System.out.println("=".repeat(40));
+    }
+
+    public static void printHourlySalesReport(Map<Integer, Integer> hourlySales) {
+        System.out.println("\n" + "=".repeat(40));
+        System.out.println("      🕒 [시간대별 매출 분석]      ");
+        System.out.println("=".repeat(40));
+
+        if (hourlySales == null || hourlySales.isEmpty()) {
+            System.out.println("  - 데이터 없음");
+        } else {
+            int maxSales = hourlySales.values().stream().mapToInt(Integer::intValue).max().orElse(1);
+            for (int hour = 0; hour < 24; hour++) {
+                int sales = hourlySales.getOrDefault(hour, 0);
+                int barLength = (sales * 25 / maxSales);
+                String bar = "■".repeat(barLength);
+                System.out.printf("  %02d시 | %-25s (%,d원)\n", hour, bar, sales);
+            }
+        }
+        System.out.println("=".repeat(40));
+    }
+
+    public static void printTopMemberReport(List<Map<String, Object>> topMembers) {
+        System.out.println("\n" + "=".repeat(40));
+        System.out.println("      💎 [우수 회원 기여도 분석]      ");
+        System.out.println("=".repeat(40));
+
+        if (topMembers == null || topMembers.isEmpty()) {
+            System.out.println("  - 데이터 없음");
+        } else {
+            System.out.printf("  %-15s | %s\n", "회원 연락처", "누적 결제액");
+            System.out.println("-".repeat(40));
+            for (int i = 0; i < topMembers.size(); i++) {
+                Map<String, Object> m = topMembers.get(i);
+                System.out.printf("  %d. %-15s | %,d원\n", i + 1, m.get("phone"), m.get("total"));
+            }
+        }
+        System.out.println("=".repeat(40));
+    }
+
     public static void printList(String title, List<?> list, String emptyMessage) {
         System.out.println("\n" + title);
         if (list == null || list.isEmpty()) {

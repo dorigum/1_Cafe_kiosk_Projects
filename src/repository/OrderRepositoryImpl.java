@@ -91,6 +91,72 @@ public class OrderRepositoryImpl implements OrderRepository {
         }
     }
 
+    @Override
+    public Map<String, Object> getSalesStatsByPeriod(String startDate, String endDate) {
+        Map<String, Object> stats = new LinkedHashMap<>();
+        String sql = "SELECT COUNT(*) as order_count, SUM(total_amount) as total_amount "
+                     + "FROM ORDERS "
+                     + "WHERE order_date BETWEEN ? AND ? AND status = 'COMPLETED'";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, startDate + " 00:00:00");
+            pstmt.setString(2, endDate + " 23:59:59");
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    stats.put("count", rs.getInt("order_count"));
+                    stats.put("amount", rs.getInt("total_amount"));
+                }
+            }
+            return stats;
+        } catch (SQLException e) {
+            throw new RepositoryException("기간별 상세 매출 조회 중 오류가 발생했습니다.", e);
+        }
+    }
+
+    @Override
+    public Map<Integer, Integer> getHourlySales() {
+        Map<Integer, Integer> stats = new LinkedHashMap<>();
+        String sql = "SELECT HOUR(order_date) as hour, SUM(total_amount) as total "
+                     + "FROM ORDERS WHERE status = 'COMPLETED' "
+                     + "GROUP BY hour ORDER BY hour";
+        try (Connection conn = DBUtil.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                stats.put(rs.getInt("hour"), rs.getInt("total"));
+            }
+            return stats;
+        } catch (SQLException e) {
+            throw new RepositoryException("시간대별 매출 조회 중 오류가 발생했습니다.", e);
+        }
+    }
+
+    @Override
+    public List<Map<String, Object>> getTopSpenders(int limit) {
+        List<Map<String, Object>> spenders = new ArrayList<>();
+        String sql = "SELECT m.phone, SUM(o.total_amount) as total_spent "
+                     + "FROM ORDERS o "
+                     + "JOIN MEMBER m ON o.member_id = m.member_id "
+                     + "WHERE o.status = 'COMPLETED' "
+                     + "GROUP BY m.member_id "
+                     + "ORDER BY total_spent DESC LIMIT ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, limit);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> map = new LinkedHashMap<>();
+                    map.put("phone", rs.getString("phone"));
+                    map.put("total", rs.getInt("total_spent"));
+                    spenders.add(map);
+                }
+            }
+            return spenders;
+        } catch (SQLException e) {
+            throw new RepositoryException("회원별 기여도 조회 중 오류가 발생했습니다.", e);
+        }
+    }
+
     public boolean cancelOrder(long orderId) {
         String sql = "UPDATE ORDERS SET status = 'CANCELLED' WHERE order_id = ? AND status != 'CANCELLED'";
         try (Connection conn = DBUtil.getConnection();

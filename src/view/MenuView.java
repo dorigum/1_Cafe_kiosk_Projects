@@ -353,10 +353,13 @@ public class MenuView {
 
 	private void runStatisticsManagement(AdminController adminController) {
 		while (true) {
-			System.out.println("\n--- [매출 통계 및 그래프 조회] ---");
-			System.out.println("1. 날짜별 매출 추이");
-			System.out.println("2. 카테고리별 매출 추이");
-			System.out.println("3. 메뉴별 매출 추이");
+			System.out.println("\n--- [매출 통계 및 분석 고도화] ---");
+			System.out.println("1. 날짜별 매출 추이 (그래프)");
+			System.out.println("2. 카테고리별 매출 분석 (비율)");
+			System.out.println("3. 메뉴별 판매 순위 (Top 3)");
+			System.out.println("4. 기간별 상세 조회 (객단가 분석)");
+			System.out.println("5. 시간대별 매출 분석 (피크타임)");
+			System.out.println("6. 우수 회원 기여도 분석 (VVIP)");
 			System.out.println("0. 뒤로");
 			int choice = readInt("선택: ");
 
@@ -364,10 +367,20 @@ public class MenuView {
 				case 1: runDateStatistics(adminController); break;
 				case 2: adminController.showCategoryStatistics(); break;
 				case 3: adminController.showMenuStatistics(); break;
+				case 4: runDetailedPeriodStatistics(adminController); break;
+				case 5: adminController.showHourlySalesStatistics(); break;
+				case 6: adminController.showTopMemberStatistics(5); break;
 				case 0: return;
 				default: FailView.fail("잘못된 선택입니다.");
 			}
 		}
+	}
+
+	private void runDetailedPeriodStatistics(AdminController adminController) {
+		System.out.println("\n--- [기간별 상세 조회] ---");
+		String start = readText("시작일 (YYYY-MM-DD): ");
+		String end = readText("종료일 (YYYY-MM-DD): ");
+		adminController.showDetailedPeriodStatistics(start, end);
 	}
 
 	private void runDateStatistics(AdminController adminController) {

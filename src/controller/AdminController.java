@@ -230,6 +230,33 @@ public class AdminController {
         }
     }
 
+    public void showDetailedPeriodStatistics(String startDate, String endDate) {
+        try {
+            Map<String, Object> stats = adminService.getSalesStatsByPeriod(startDate, endDate);
+            EndView.printDetailedPeriodReport(startDate, endDate, stats);
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+        }
+    }
+
+    public void showHourlySalesStatistics() {
+        try {
+            Map<Integer, Integer> hourlySales = adminService.getHourlySales();
+            EndView.printHourlySalesReport(hourlySales);
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+        }
+    }
+
+    public void showTopMemberStatistics(int limit) {
+        try {
+            List<Map<String, Object>> topMembers = adminService.getTopSpenders(limit);
+            EndView.printTopMemberReport(topMembers);
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+        }
+    }
+
     private Map<String, Integer> formatWeekData(Map<String, Integer> periodSales) {
         Map<String, Integer> formattedSales = new java.util.LinkedHashMap<>();
         for (Map.Entry<String, Integer> entry : periodSales.entrySet()) {
