@@ -1,5 +1,23 @@
+-- 1. 데이터베이스 생성 및 선택
+CREATE DATABASE IF NOT EXISTS kiosk;
+USE kiosk;
 
+-- 2. 기존 테이블 삭제 (외래 키 제약 조건 때문에 자식 테이블부터 삭제)
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS `ORDER_ITEM_OPTION`;
+DROP TABLE IF EXISTS `ORDER_ITEM`;
+DROP TABLE IF EXISTS `ORDERS`;
+DROP TABLE IF EXISTS `WISHLIST`;
+DROP TABLE IF EXISTS `MENU_OPTION_GROUP`;
+DROP TABLE IF EXISTS `CATEGORY_OPTION_GROUP`;  -- 신규 추가
+DROP TABLE IF EXISTS `MENU_OPTION`;
+DROP TABLE IF EXISTS `OPTION_GROUP`;
+DROP TABLE IF EXISTS `MENU`;
+DROP TABLE IF EXISTS `CATEGORY`;
+DROP TABLE IF EXISTS `MEMBER`;
+SET FOREIGN_KEY_CHECKS = 1;
 
+-- 3. 테이블 생성
 CREATE TABLE `MEMBER` (
   `member_id` bigint PRIMARY KEY AUTO_INCREMENT COMMENT '회원 PK',
   `phone` varchar(20),
@@ -12,13 +30,13 @@ CREATE TABLE `MEMBER` (
 
 CREATE TABLE `CATEGORY` (
   `category_id` int PRIMARY KEY AUTO_INCREMENT,
-  `category_name` varchar(30) NOT NULL COMMENT '커피 / 논커피 / 디저트 / 라떼 …'
+  `category_name` varchar(30) NOT NULL UNIQUE COMMENT '커피 / 논커피 / 디저트 / 라떼 …'
 );
 
 CREATE TABLE `MENU` (
   `menu_id` bigint PRIMARY KEY AUTO_INCREMENT,
   `category_id` int NOT NULL,
-  `menu_name` varchar(100) NOT NULL,
+  `menu_name` varchar(100) NOT NULL UNIQUE,
   `price` int NOT NULL,
   `description` text,
   `is_available` tinyint(1) NOT NULL DEFAULT 1 COMMENT '판매 가능 여부 (품절 시 0)',
@@ -30,7 +48,7 @@ CREATE TABLE `OPTION_GROUP` (
   `group_name` varchar(30) NOT NULL COMMENT '사이즈 / 온도 / 카페인 / 휘핑'
 );
 
-CREATE TABLE `OPTION` (
+CREATE TABLE `MENU_OPTION` (
   `option_id` int PRIMARY KEY AUTO_INCREMENT,
   `group_id` int NOT NULL,
   `option_name` varchar(30) NOT NULL COMMENT 'Regular / Large / HOT / COLD / 카페인 / 디카페인 / 휘핑有 / 휘핑無',
@@ -38,10 +56,19 @@ CREATE TABLE `OPTION` (
   `display_order` int NOT NULL COMMENT '옵션 표시 순서 ex) regular(1)/medium(2)/large(3)'
 );
 
+-- 신규: 카테고리별 기본 옵션 그룹 설정 테이블
+CREATE TABLE `CATEGORY_OPTION_GROUP` (
+  `category_id` int NOT NULL,
+  `group_id` int NOT NULL,
+  `display_order` int NOT NULL DEFAULT 0 COMMENT '옵션 그룹 표시 순서',
+  PRIMARY KEY (`category_id`, `group_id`)
+);
+
+-- 기존 메뉴별 개별 옵션 테이블 (카테고리 설정을 따르지 않는 특수 메뉴용으로 유지)
 CREATE TABLE `MENU_OPTION_GROUP` (
   `menu_id` bigint NOT NULL,
   `group_id` int NOT NULL,
-  `display_order` int NOT NULL COMMENT '옵션 그룹 표시 순서 ex) 온도(1), 사이즈(2) 휘핑유무(3)등 ',
+  `display_order` int NOT NULL COMMENT '옵션 그룹 표시 순서',
   PRIMARY KEY (`menu_id`, `group_id`)
 );
 
@@ -78,44 +105,24 @@ CREATE TABLE `ORDER_ITEM_OPTION` (
   PRIMARY KEY (`order_item_id`, `option_id`)
 );
 
+-- 4. 인덱스 설정
 CREATE INDEX `MENU_index_0` ON `MENU` (`category_id`);
-
 CREATE INDEX `MENU_index_1` ON `MENU` (`is_available`);
-
-CREATE INDEX `MENU_index_2` ON `MENU` (`created_at`);
-
-CREATE INDEX `OPTION_index_3` ON `OPTION` (`group_id`);
-
+CREATE INDEX `MENU_OPTION_index_3` ON `MENU_OPTION` (`group_id`);
 CREATE INDEX `ORDERS_index_4` ON `ORDERS` (`status`, `order_date`);
-
-CREATE INDEX `ORDERS_index_5` ON `ORDERS` (`member_id`, `status`);
-
 CREATE INDEX `ORDER_ITEM_index_6` ON `ORDER_ITEM` (`order_id`);
 
-CREATE INDEX `ORDER_ITEM_index_7` ON `ORDER_ITEM` (`menu_id`);
-
-ALTER TABLE `MENU_OPTION_GROUP` COMMENT = '메뉴별 적용 옵션 그룹 매핑 (예: 디저트엔 온도 옵션 없음)';
-
-ALTER TABLE `ORDER_ITEM_OPTION` COMMENT = '결제 시점에 메뉴가 어떤 옵션이 선택되었는지';
-
+-- 5. 외래 키 제약 조건 설정
 ALTER TABLE `MENU` ADD FOREIGN KEY (`category_id`) REFERENCES `CATEGORY` (`category_id`);
-
-ALTER TABLE `OPTION` ADD FOREIGN KEY (`group_id`) REFERENCES `OPTION_GROUP` (`group_id`);
-
+ALTER TABLE `MENU_OPTION` ADD FOREIGN KEY (`group_id`) REFERENCES `OPTION_GROUP` (`group_id`);
+ALTER TABLE `CATEGORY_OPTION_GROUP` ADD FOREIGN KEY (`category_id`) REFERENCES `CATEGORY` (`category_id`);
+ALTER TABLE `CATEGORY_OPTION_GROUP` ADD FOREIGN KEY (`group_id`) REFERENCES `OPTION_GROUP` (`group_id`);
 ALTER TABLE `MENU_OPTION_GROUP` ADD FOREIGN KEY (`menu_id`) REFERENCES `MENU` (`menu_id`);
-
 ALTER TABLE `MENU_OPTION_GROUP` ADD FOREIGN KEY (`group_id`) REFERENCES `OPTION_GROUP` (`group_id`);
-
 ALTER TABLE `WISHLIST` ADD FOREIGN KEY (`member_id`) REFERENCES `MEMBER` (`member_id`);
-
 ALTER TABLE `WISHLIST` ADD FOREIGN KEY (`menu_id`) REFERENCES `MENU` (`menu_id`);
-
 ALTER TABLE `ORDERS` ADD FOREIGN KEY (`member_id`) REFERENCES `MEMBER` (`member_id`);
-
 ALTER TABLE `ORDER_ITEM` ADD FOREIGN KEY (`order_id`) REFERENCES `ORDERS` (`order_id`);
-
 ALTER TABLE `ORDER_ITEM` ADD FOREIGN KEY (`menu_id`) REFERENCES `MENU` (`menu_id`);
-
 ALTER TABLE `ORDER_ITEM_OPTION` ADD FOREIGN KEY (`order_item_id`) REFERENCES `ORDER_ITEM` (`order_item_id`);
-
-ALTER TABLE `ORDER_ITEM_OPTION` ADD FOREIGN KEY (`option_id`) REFERENCES `OPTION` (`option_id`);
+ALTER TABLE `ORDER_ITEM_OPTION` ADD FOREIGN KEY (`option_id`) REFERENCES `MENU_OPTION` (`option_id`);

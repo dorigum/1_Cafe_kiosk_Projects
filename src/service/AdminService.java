@@ -1,99 +1,70 @@
 package service;
 
-import model.Member;
-import model.Menu;
-import model.Category;
-import model.Order;
-import repository.CategoryRepository;
-import repository.MemberRepository;
-import repository.MenuRepository;
-import repository.OrderRepository;
+import model.*;
+
 import java.util.List;
 import java.util.Map;
 
-public class AdminService {
-    private MenuRepository menuRepository;
-    private MemberRepository memberRepository = new MemberRepository();
-    private CategoryRepository categoryRepository = new CategoryRepository();
-    private OrderRepository orderRepository = new OrderRepository();
+public interface AdminService {
+    // 메뉴 관리
+    void registerMenu(int categoryId, String name, int price, String description);
 
-    public AdminService(MenuRepository menuRepository) {
-        this.menuRepository = menuRepository;
-    }
+    List<Menu> getMenuList();
 
-    // --- 상품(메뉴) 관리 ---
-    public void registerMenu(int categoryId, String name, int price, String description) {
-        menuRepository.addMenu(new Menu(categoryId, name, price, description));
-    }
+    void deleteMenu(long id);
 
-    public List<Menu> getMenuList() {
-        return menuRepository.getAllMenus();
-    }
+    // 카테고리 관리
+    void addCategory(String name);
 
-    public void deleteMenu(long id) {
-        menuRepository.deleteMenu(id);
-    }
+    List<Category> getCategoryList();
 
-    // --- 카테고리 관리 ---
-    public void addCategory(String name) {
-        categoryRepository.addCategory(name);
-    }
+    void deleteCategory(int id);
 
-    public List<Category> getCategoryList() {
-        return categoryRepository.getAllCategories();
-    }
+    Category getCategoryById(int id);
 
-    public void deleteCategory(int id) {
-        categoryRepository.deleteCategory(id);
-    }
+    void addOptionGroupToCategory(int categoryId, long groupId, int displayOrder);
 
-    // --- 회원 관리 ---
-    public List<Member> getMemberList() {
-        return memberRepository.getAllMembers();
-    }
+    void removeOptionGroupFromCategory(int categoryId, long groupId);
 
-    public void deleteMember(long id) {
-        memberRepository.deleteMember(id);
-    }
+    // 옵션 그룹 관리
+    List<OptionGroup> getOptionGroupList();
 
-    // --- 주문 관리 ---
-    public List<Order> getOrderList() {
-        return orderRepository.getAllOrders();
-    }
+    void addOptionGroup(String name);
 
-    public void cancelOrder(long orderId) {
-        if (orderRepository.cancelOrder(orderId)) {
-            System.out.println("주문이 취소되었습니다.");
-        } else {
-            System.out.println("취소 실패: 존재하지 않는 주문이거나 이미 취소된 주문입니다.");
-        }
-    }
+    void deleteOptionGroup(long groupId);
 
-    // --- 통계 기능 ---
-    public void showStatistics() {
-        System.out.println("\n===== [매출 통계 리포트] =====");
-        
-        int totalSales = orderRepository.getTotalSales();
-        System.out.printf("▶ 누적 총 매출액: %,d원\n", totalSales);
+    // 메뉴 옵션 관리
+    List<MenuOption> getMenuOptionsByGroup(long groupId);
 
-        System.out.println("\n[일별 매출 추이 (최근 7일)]");
-        Map<String, Integer> dailySales = orderRepository.getDailySales();
-        if (dailySales.isEmpty()) {
-            System.out.println("- 데이터 없음");
-        } else {
-            dailySales.forEach((date, sales) -> {
-                String bar = "■".repeat(Math.min(20, sales / 1000));
-                System.out.printf("%s | %-20s (%,d원)\n", date, bar, sales);
-            });
-        }
+    void addMenuOption(long groupId, String name, int extraPrice, int displayOrder);
 
-        System.out.println("\n[카테고리별 매출 현황]");
-        Map<String, Integer> categorySales = orderRepository.getSalesByCategory();
-        categorySales.forEach((cat, sales) -> 
-            System.out.printf("- %-10s: %,d원\n", cat, sales));
+    void updateMenuOption(long optionId, String name, int extraPrice, int displayOrder);
 
-        System.out.println("\n[인기 메뉴 Top 3]");
-        List<String> topMenus = orderRepository.getTopSellingMenus();
-        topMenus.forEach(menu -> System.out.println("- " + menu));
-    }
+    void deleteMenuOption(long optionId);
+
+    // 회원 관리
+    List<Member> getMemberList();
+
+    void deleteMember(long id);
+
+    // 주문 관리
+    List<Order> getOrderList();
+
+    void cancelOrder(long orderId);
+
+    // 통계 기능
+    int getTotalSales();
+
+    Map<String, Integer> getSalesByCategory();
+
+    List<String> getTopSellingMenus();
+
+    Map<String, Integer> getDailySales();
+
+    Map<String, Integer> getSalesByPeriod(String format);
+
+    // 260313 [feat]: 매출 통계 고도화 신규 메서드
+    Map<String, Object> getSalesStatsByPeriod(String startDate, String endDate);
+    Map<Integer, Integer> getHourlySales();
+    List<Map<String, Object>> getTopSpenders(int limit);
 }
