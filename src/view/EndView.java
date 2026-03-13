@@ -5,6 +5,7 @@ import model.Member;
 import model.Menu;
 import model.MenuOption;
 import model.OptionGroup;
+import model.OptionSelection;
 import model.Order;
 import model.OrderItem;
 import model.Wishlist;

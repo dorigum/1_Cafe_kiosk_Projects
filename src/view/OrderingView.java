@@ -5,7 +5,10 @@ import model.Member;
 import model.Menu;
 import model.MenuOption;
 import model.OptionGroup;
+import model.OptionSelection;
 import model.OrderItem;
+import service.OptionSelectionService;
+import service.OrderItemService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,9 +21,13 @@ public class OrderingView {
     private static final int PLACE_ORDER = 1;
 
     private final Scanner scanner;
+    private final OptionSelectionService optionSelectionService;
+    private final OrderItemService orderItemService;
 
     public OrderingView(Scanner scanner) {
         this.scanner = scanner;
+        this.optionSelectionService = new OptionSelectionService();
+        this.orderItemService = new OrderItemService();
     }
 
     public void run(MenuController menuController, Member member) {
@@ -88,10 +95,10 @@ public class OrderingView {
         }
     }
 
-    private OptionSelectionResult selectMenuOptions(List<OptionGroup> optionGroups) {
-        OptionSelection selection = new OptionSelection(optionGroups);
+    private OptionSelection selectMenuOptions(List<OptionGroup> optionGroups) {
+        OptionSelection selection = optionSelectionService.createDefaultSelection(optionGroups);
         if (optionGroups == null || optionGroups.isEmpty()) {
-            return OptionSelectionResult.confirmed(selection);
+            return selection;
         }
 
         while (true) {
@@ -99,10 +106,10 @@ public class OrderingView {
             int groupChoice = readInt("옵션 변경할 그룹 번호 (0. 뒤로, 9. 선택 확정): ");
 
             if (groupChoice == BACK) {
-                return OptionSelectionResult.cancelled(selection);
+                return null;
             }
             if (groupChoice == CONFIRM_SELECTION) {
-                return OptionSelectionResult.confirmed(selection);
+                return selection;
             }
 
             OptionGroup targetGroup = findOptionGroupByChoice(optionGroups, groupChoice);
@@ -111,18 +118,19 @@ public class OrderingView {
                 continue;
             }
 
-            OptionChangeStatus optionChangeStatus = changeOptionSelection(targetGroup, selection);
-            if (optionChangeStatus == OptionChangeStatus.CONFIRMED) {
-                return OptionSelectionResult.confirmed(selection);
+            OptionSelection updatedSelection = changeOptionSelection(targetGroup, selection);
+            if (updatedSelection == null) {
+                return selection;
             }
+            selection = updatedSelection;
         }
     }
 
-    private OptionChangeStatus changeOptionSelection(OptionGroup optionGroup, OptionSelection selection) {
+    private OptionSelection changeOptionSelection(OptionGroup optionGroup, OptionSelection selection) {
         List<MenuOption> options = optionGroup.getOptions();
         if (options == null || options.isEmpty()) {
             FailView.fail("옵션 목록이 없습니다.");
-            return OptionChangeStatus.RETURN_TO_GROUPS;
+            return selection;
         }
 
         EndView.printSelectableMenuOptions(optionGroup, selection);
@@ -130,10 +138,10 @@ public class OrderingView {
         while (true) {
             int optionChoice = readInt("옵션 선택 (0. 그룹 선택으로, 9. 선택 확정): ");
             if (optionChoice == BACK) {
-                return OptionChangeStatus.RETURN_TO_GROUPS;
+                return selection;
             }
             if (optionChoice == CONFIRM_SELECTION) {
-                return OptionChangeStatus.CONFIRMED;
+                return null;
             }
 
             MenuOption selectedOption = findOptionByChoice(options, optionChoice);
@@ -142,8 +150,7 @@ public class OrderingView {
                 continue;
             }
 
-            selection.changeSelection(optionGroup, selectedOption);
-            return OptionChangeStatus.RETURN_TO_GROUPS;
+            return optionSelectionService.changeSelection(selection, optionGroup, selectedOption);
         }
     }
 
@@ -186,8 +193,8 @@ public class OrderingView {
 
     private void addMenuToCart(MenuController menuController, Menu selectedMenu, List<OrderItem> cart) {
         List<OptionGroup> optionGroups = menuController.getOptionGroups(selectedMenu);
-        OptionSelectionResult optionResult = selectMenuOptions(optionGroups);
-        if (!optionResult.isConfirmed()) {
+        OptionSelection selection = selectMenuOptions(optionGroups);
+        if (selection == null) {
             return;
         }
 
@@ -196,15 +203,14 @@ public class OrderingView {
             return;
         }
 
-        cart.add(createOrderItem(menuController, selectedMenu, quantity, optionResult.getSelection()));
+        cart.add(createOrderItem(menuController, selectedMenu, quantity, selection));
         System.out.println("장바구니에 담겼습니다.");
     }
 
     private OrderItem createOrderItem(MenuController menuController, Menu selectedMenu, int quantity,
             OptionSelection selection) {
         String categorySnapshot = menuController.getCategoryName(selectedMenu);
-        return new OrderItem(0, 0, selectedMenu.getMenuId(), quantity, selectedMenu.getPrice(),
-                selectedMenu.getMenuName(), categorySnapshot, selection.getSelectedOptions());
+        return orderItemService.createOrderItem(selectedMenu, quantity, categorySnapshot, selection);
     }
 
     private Menu findMenuByChoice(List<Menu> menus, int menuChoice) {
@@ -268,10 +274,5 @@ public class OrderingView {
     private String readText(String prompt) {
         System.out.print(prompt);
         return scanner.nextLine().trim();
-    }
-
-    private enum OptionChangeStatus {
-        RETURN_TO_GROUPS,
-        CONFIRMED
     }
 }
