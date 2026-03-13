@@ -154,6 +154,15 @@ public class AdminController {
         }
     }
 
+    public void deleteOptionGroup(long groupId) {
+        try {
+            adminService.deleteOptionGroup(groupId);
+            EndView.success("옵션 그룹이 삭제되었습니다.");
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+        }
+    }
+
     public List<model.MenuOption> listMenuOptions(model.OptionGroup group) {
         try {
             List<model.MenuOption> options = adminService.getMenuOptionsByGroup(group.getGroupId());

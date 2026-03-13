@@ -156,7 +156,7 @@ public class MenuView {
 		while (true) {
 			System.out.println("\n--- [메뉴 옵션 관리] ---");
 			List<model.OptionGroup> groups = adminController.listOptionGroups();
-			System.out.println("\n1. 그룹 추가 | 2. 세부 옵션 관리 | 0. 뒤로");
+			System.out.println("\n1. 그룹 추가 | 2. 세부 옵션 관리 | 3. 그룹 삭제 | 0. 뒤로");
 			int sub = readInt("선택: ");
 
 			if (sub == 1) {
@@ -173,6 +173,17 @@ public class MenuView {
 					continue;
 				}
 				runDetailOptionManagement(adminController, groups.get(groupIdx - 1));
+			} else if (sub == 3) {
+				if (groups == null || groups.isEmpty()) {
+					FailView.fail("삭제할 옵션 그룹이 없습니다.");
+					continue;
+				}
+				int groupIdx = readInt("삭제할 그룹 번호: ");
+				if (groupIdx < 1 || groupIdx > groups.size()) {
+					FailView.fail("올바른 번호를 선택해 주세요.");
+					continue;
+				}
+				adminController.deleteOptionGroup(groups.get(groupIdx - 1).getGroupId());
 			} else if (sub == 0) {
 				break;
 			} else {

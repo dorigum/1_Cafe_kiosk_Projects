@@ -63,6 +63,8 @@
 - **Repository 및 Service 계층 강화**:
     - `OrderRepository`에 `getSalesStatsByPeriod`, `getHourlySales`, `getTopSpenders` 메서드 추가 및 구현.
     - `AdminService`를 통해 위 기능들을 관리자 메뉴와 연동.
+- **데이터 정합성 관리 도구 강화**:
+    - 관리자의 오입력 데이터 수정을 위한 **옵션 그룹 및 세부 옵션 삭제** 기능 UI 연동 완료.
 
 ### [2026-03-13] 카테고리별 옵션 체계 고도화 및 팀 프로젝트 통합
 - **카테고리 기반 옵션 관리**:
