@@ -1,5 +1,7 @@
 use kiosk;
 
+DELETE FROM MENU_OPTION_GROUP WHERE menu_id IN (SELECT menu_id FROM MENU WHERE category_id = 2)AND group_id = 4;
+
 -- 데이터 초기화 (순서 주의)
 SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE TABLE `ORDER_ITEM_OPTION`;
@@ -7,6 +9,7 @@ TRUNCATE TABLE `ORDER_ITEM`;
 TRUNCATE TABLE `ORDERS`;
 TRUNCATE TABLE `WISHLIST`;
 TRUNCATE TABLE `MENU_OPTION_GROUP`;
+TRUNCATE TABLE `CATEGORY_OPTION_GROUP`;
 TRUNCATE TABLE `MENU_OPTION`;
 TRUNCATE TABLE `OPTION_GROUP`;
 TRUNCATE TABLE `MENU`;
@@ -36,21 +39,34 @@ INSERT INTO `MENU` (category_id, menu_name, price, description, is_available) VA
 -- 4. OPTION_GROUP 데이터
 INSERT INTO `OPTION_GROUP` (group_name) VALUES 
 ('온도'),
-('사이즈');
+('사이즈'),
+('휘핑유무'),
+('카페인유무');
 
 -- 5. MENU_OPTION 데이터
 INSERT INTO `MENU_OPTION` (group_id, option_name, extra_price, display_order) VALUES 
 (1, 'HOT', 0, 1),
 (1, 'ICE', 500, 2),
 (2, 'Regular', 0, 1),
-(2, 'Large', 1000, 2);
+(2, 'Large', 1000, 2),
+(3, '휘핑유', 0, 1),
+(3, '휘핑무', 0, 2),
+(4, '카페인', 0, 1),
+(4, '디카페인', 500, 2);
 
--- 6. MENU_OPTION_GROUP 매핑 (아메리카노에 온도, 사이즈 적용)
+-- 6. CATEGORY_OPTION_GROUP 매핑 (카테고리별 기본 옵션 설정)
+INSERT INTO `CATEGORY_OPTION_GROUP` (category_id, group_id, display_order) VALUES 
+(1, 1, 1), (1, 2, 2), (1, 4, 3), -- 커피: 온도, 사이즈, 카페인
+(2, 1, 1), (2, 2, 2), (2, 3, 3); -- 논커피: 온도, 사이즈, 휘핑 (카페인 제외)
+
+-- 7. MENU_OPTION_GROUP 매핑 (현재 DB에서 사용 중인 경우를 위한 데이터)
+-- 아메리카노(1), 카페라떼(2) -> 온도(1), 사이즈(2), 카페인(4)
 INSERT INTO `MENU_OPTION_GROUP` (menu_id, group_id, display_order) VALUES 
-(1, 1, 1),
-(1, 2, 2),
-(2, 1, 1),
-(2, 2, 2);
+(1, 1, 1), (1, 2, 2), (1, 4, 3),
+(2, 1, 1), (2, 2, 2), (2, 4, 3);
+-- 초코라떼(3) -> 온도(1), 사이즈(2), 휘핑(3) (카페인 제외)
+INSERT INTO `MENU_OPTION_GROUP` (menu_id, group_id, display_order) VALUES 
+(3, 1, 1), (3, 2, 2), (3, 3, 3);
 
 -- 7. ORDERS 데이터 (샘플 주문 1건)
 INSERT INTO `ORDERS` (member_id, total_amount, point_used, point_earned, status) VALUES 
