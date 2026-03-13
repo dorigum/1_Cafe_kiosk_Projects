@@ -1,7 +1,10 @@
 package repository;
 
 import exception.RepositoryException;
+import model.Member;
+import model.MenuOption;
 import model.Order;
+import model.OrderItem;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -9,6 +12,43 @@ import java.util.List;
 import java.util.Map;
 
 public class OrderRepositoryImpl implements OrderRepository {
+
+    @Override
+    public int placeOrder(List<OrderItem> orderItems, Member member) {
+        String insertOrderSql = "INSERT INTO ORDERS (member_id, total_amount, point_used, point_earned, status) VALUES (?, ?, ?, ?, ?)";
+        String insertOrderItemSql = "INSERT INTO ORDER_ITEM (order_id, menu_id, quantity, unit_price, menu_name_snapshot, category_name_snapshot) VALUES (?, ?, ?, ?, ?, ?)";
+        String insertOrderItemOptionSql = "INSERT INTO ORDER_ITEM_OPTION (order_item_id, option_id) VALUES (?, ?)";
+        String updateMemberPointSql = "UPDATE MEMBER SET point_balance = point_balance + ? WHERE member_id = ?";
+
+        Connection conn = null;
+        try {
+            conn = DBUtil.getConnection();
+            conn.setAutoCommit(false);
+
+            int totalAmount = calculateTotalAmount(orderItems);
+            int pointUsed = 0;
+            int pointEarned = member == null ? 0 : totalAmount / 10;
+            long orderId = insertOrder(conn, insertOrderSql, member, totalAmount, pointUsed, pointEarned);
+
+            for (OrderItem orderItem : orderItems) {
+                long orderItemId = insertOrderItem(conn, insertOrderItemSql, orderId, orderItem);
+                insertOrderItemOptions(conn, insertOrderItemOptionSql, orderItemId, orderItem.getOptions());
+            }
+
+            if (member != null && pointEarned > 0) {
+                updateMemberPoint(conn, updateMemberPointSql, member.getMemberId(), pointEarned);
+            }
+
+            conn.commit();
+            return 1;
+        } catch (SQLException e) {
+            rollback(conn);
+            e.printStackTrace();
+            throw new RepositoryException("주문 처리 중 오류가 발생했습니다.", e);
+        } finally {
+            closeConnection(conn);
+        }
+    }
 
     public int getTotalSales() {
         String sql = "SELECT SUM(total_amount) FROM ORDERS WHERE status = 'COMPLETED'";
@@ -249,6 +289,98 @@ public class OrderRepositoryImpl implements OrderRepository {
             return orders;
         } catch (SQLException e) {
             throw new RepositoryException("주문 목록 조회 중 오류가 발생했습니다.", e);
+        }
+    }
+
+    private int calculateTotalAmount(List<OrderItem> orderItems) {
+        int totalAmount = 0;
+        for (OrderItem orderItem : orderItems) {
+            totalAmount += orderItem.getUnitPrice() * orderItem.getQuantity();
+        }
+        return totalAmount;
+    }
+
+    private long insertOrder(Connection conn, String sql, Member member, int totalAmount, int pointUsed, int pointEarned)
+            throws SQLException {
+        try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            if (member == null) {
+                pstmt.setNull(1, Types.BIGINT);
+            } else {
+                pstmt.setLong(1, member.getMemberId());
+            }
+            pstmt.setInt(2, totalAmount);
+            pstmt.setInt(3, pointUsed);
+            pstmt.setInt(4, pointEarned);
+            pstmt.setString(5, "COMPLETED");
+            pstmt.executeUpdate();
+
+            try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
+        }
+        throw new SQLException("주문 번호 생성에 실패했습니다.");
+    }
+
+    private long insertOrderItem(Connection conn, String sql, long orderId, OrderItem orderItem) throws SQLException {
+        try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            pstmt.setLong(1, orderId);
+            pstmt.setLong(2, orderItem.getMenuId());
+            pstmt.setInt(3, orderItem.getQuantity());
+            pstmt.setInt(4, orderItem.getUnitPrice());
+            pstmt.setString(5, orderItem.getMenuNameSnapshot());
+            pstmt.setString(6, orderItem.getCategoryNameSnapshot());
+            pstmt.executeUpdate();
+
+            try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
+        }
+        throw new SQLException("주문 항목 생성에 실패했습니다.");
+    }
+
+    private void insertOrderItemOptions(Connection conn, String sql, long orderItemId, List<MenuOption> options) throws SQLException {
+        if (options == null || options.isEmpty()) {
+            return;
+        }
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            for (MenuOption option : options) {
+                pstmt.setLong(1, orderItemId);
+                pstmt.setLong(2, option.getOptionId());
+                pstmt.addBatch();
+            }
+            pstmt.executeBatch();
+        }
+    }
+
+    private void updateMemberPoint(Connection conn, String sql, long memberId, int pointEarned) throws SQLException {
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, pointEarned);
+            pstmt.setLong(2, memberId);
+            pstmt.executeUpdate();
+        }
+    }
+
+    private void rollback(Connection conn) {
+        if (conn != null) {
+            try {
+                conn.rollback();
+            } catch (SQLException ignored) {
+            }
+        }
+    }
+
+    private void closeConnection(Connection conn) {
+        if (conn != null) {
+            try {
+                conn.setAutoCommit(true);
+                conn.close();
+            } catch (SQLException ignored) {
+            }
         }
     }
 }

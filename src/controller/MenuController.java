@@ -47,12 +47,12 @@ public class MenuController {
      * @return 1: 성공, 0 실패
      */
     public int order(List<OrderItem> orderItems, Member member) {
-        if (member == null) {
-            System.out.println("비회원 주문");
-            return 1;
+        try {
+            return menuService.placeOrder(orderItems, member);
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+            return 0;
         }
-        System.out.println("회원 주문");
-        return 1;
     }
 
     public List<OptionGroup> getOptionGroups(Menu menu) {
