@@ -57,9 +57,37 @@ public class AdminServiceImpl implements AdminService {
             throw new NotFoundException("존재하지 않는 카테고리 ID입니다.");
         }
 
-        Menu menu = new Menu(categoryId, name.trim(), price, description == null ? "" : description.trim());
+        String trimmedName = name.trim();
+        Menu menu = new Menu(categoryId, trimmedName, price, description == null ? "" : description.trim());
+        
+        // 1. 메뉴 기본 정보 등록
         if (!menuRepository.addMenu(menu)) {
             throw new BusinessRuleException("메뉴 등록에 실패했습니다.");
+        }
+
+        // 2. [지능형 옵션 매핑] '프라푸치노' 또는 '라떼' 키워드 검사
+        if (trimmedName.contains("프라푸치노") || trimmedName.contains("라떼")) {
+            // '휘핑유무' 옵션 그룹 찾기
+            List<OptionGroup> allGroups = optionGroupRepository.findAll();
+            OptionGroup whippingGroup = allGroups.stream()
+                    .filter(g -> g.getGroupName().contains("휘핑"))
+                    .findFirst()
+                    .orElse(null);
+
+            if (whippingGroup != null) {
+                // 방금 등록된 메뉴의 ID 조회 (가장 최근 등록된 동일 이름 메뉴)
+                List<Menu> menus = menuRepository.getAllMenus();
+                Menu registeredMenu = menus.stream()
+                        .filter(m -> m.getMenuName().equals(trimmedName))
+                        .sorted((m1, m2) -> Long.compare(m2.getMenuId(), m1.getMenuId()))
+                        .findFirst()
+                        .orElse(null);
+
+                if (registeredMenu != null) {
+                    // 메뉴별 개별 옵션 그룹 매핑 (display_order는 마지막 순번으로 지정)
+                    menuRepository.addOptionGroupToMenu(registeredMenu.getMenuId(), whippingGroup.getGroupId(), 99);
+                }
+            }
         }
     }
 
