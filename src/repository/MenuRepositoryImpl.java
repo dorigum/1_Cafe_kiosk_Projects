@@ -46,7 +46,7 @@ public class MenuRepositoryImpl implements MenuRepository {
                     rs.getBoolean("is_available"),
                     rs.getTimestamp("created_at")
                 );
-                menu.setOptionGroups(fetchOptionGroups(conn, menu.getMenuId()));
+                menu.setOptionGroups(fetchOptionGroups(conn, menu.getMenuId(), menu.getCategoryId()));
                 menus.add(menu);
             }
         } catch (SQLException e) {
@@ -76,7 +76,7 @@ public class MenuRepositoryImpl implements MenuRepository {
                         rs.getBoolean("is_available"),
                         rs.getTimestamp("created_at")
                     );
-                    menu.setOptionGroups(fetchOptionGroups(conn, menu.getMenuId()));
+                    menu.setOptionGroups(fetchOptionGroups(conn, menu.getMenuId(), menu.getCategoryId()));
                     return menu;
                 }
             }
@@ -119,7 +119,7 @@ public class MenuRepositoryImpl implements MenuRepository {
                         rs.getBoolean("is_available"),
                         rs.getTimestamp("created_at")
                     );
-                    menu.setOptionGroups(fetchOptionGroups(conn, menu.getMenuId()));
+                    menu.setOptionGroups(fetchOptionGroups(conn, menu.getMenuId(), menu.getCategoryId()));
                     menus.add(menu);
                 }
             }
@@ -129,23 +129,42 @@ public class MenuRepositoryImpl implements MenuRepository {
         }
     }
 
-    private List<OptionGroup> fetchOptionGroups(Connection conn, long menuId) {
+    private List<OptionGroup> fetchOptionGroups(Connection conn, long menuId, int categoryId) {
         List<OptionGroup> groups = new ArrayList<>();
-        String sql = "SELECT og.group_id, og.group_name " +
-                     "FROM MENU_OPTION_GROUP mog " +
-                     "JOIN OPTION_GROUP og ON mog.group_id = og.group_id " +
-                     "WHERE mog.menu_id = ? " +
-                     "ORDER BY mog.display_order";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        
+        // 1. 먼저 메뉴별 특화 옵션이 있는지 확인
+        String menuSql = "SELECT og.group_id, og.group_name " +
+                         "FROM MENU_OPTION_GROUP mog " +
+                         "JOIN OPTION_GROUP og ON mog.group_id = og.group_id " +
+                         "WHERE mog.menu_id = ? " +
+                         "ORDER BY mog.display_order";
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(menuSql)) {
             pstmt.setLong(1, menuId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     groups.add(new OptionGroup(rs.getLong("group_id"), rs.getString("group_name")));
                 }
             }
-        } catch (SQLException e) {
-            // Ignore if data is missing or table has issues
+        } catch (SQLException e) { }
+
+        // 2. 메뉴별 옵션이 없으면 카테고리 기본 옵션을 가져옴
+        if (groups.isEmpty()) {
+            String categorySql = "SELECT og.group_id, og.group_name " +
+                                 "FROM CATEGORY_OPTION_GROUP cog " +
+                                 "JOIN OPTION_GROUP og ON cog.group_id = og.group_id " +
+                                 "WHERE cog.category_id = ? " +
+                                 "ORDER BY cog.display_order";
+            try (PreparedStatement pstmt = conn.prepareStatement(categorySql)) {
+                pstmt.setInt(1, categoryId);
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    while (rs.next()) {
+                        groups.add(new OptionGroup(rs.getLong("group_id"), rs.getString("group_name")));
+                    }
+                }
+            } catch (SQLException e) { }
         }
+        
         return groups;
     }
 }
