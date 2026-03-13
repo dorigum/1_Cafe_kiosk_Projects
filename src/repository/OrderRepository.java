@@ -1,6 +1,8 @@
 package repository;
 
+import model.Member;
 import model.Order;
+import model.OrderItem;
 
 import java.util.List;
 import java.util.Map;
@@ -24,4 +26,6 @@ public interface OrderRepository {
     boolean cancelOrder(long orderId);
 
     List<Order> getAllOrders();
+
+    int placeOrder(List<OrderItem> orderItems, Member member);
 }

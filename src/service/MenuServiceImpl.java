@@ -2,36 +2,42 @@ package service;
 
 import exception.ValidationException;
 import exception.NotFoundException;
+import model.Member;
 import model.Menu;
 import model.MenuOption;
 import model.OptionGroup;
+import model.OrderItem;
 import repository.MenuRepository;
 import repository.MenuRepositoryImpl;
 import repository.OptionGroupRepository;
 import repository.OptionGroupRepositoryImpl;
 import repository.MenuOptionRepository;
 import repository.MenuOptionRepositoryImpl;
+import repository.OrderRepository;
+import repository.OrderRepositoryImpl;
 import java.util.List;
 
 public class MenuServiceImpl implements MenuService {
     private final MenuRepository menuRepository;
     private final OptionGroupRepository optionGroupRepository;
     private final MenuOptionRepository menuOptionRepository;
+    private final OrderRepository orderRepository;
 
     public MenuServiceImpl() {
         this(
             new MenuRepositoryImpl(),
             new OptionGroupRepositoryImpl(),
-            new MenuOptionRepositoryImpl()
+            new MenuOptionRepositoryImpl(),
+            new OrderRepositoryImpl()
         );
     }
 
     public MenuServiceImpl(MenuRepository menuRepository) {
-        this(menuRepository, new OptionGroupRepositoryImpl(), new MenuOptionRepositoryImpl());
+        this(menuRepository, new OptionGroupRepositoryImpl(), new MenuOptionRepositoryImpl(), new OrderRepositoryImpl());
     }
 
     public MenuServiceImpl(MenuRepository menuRepository, OptionGroupRepository optionGroupRepository,
-                          MenuOptionRepository menuOptionRepository) {
+                          MenuOptionRepository menuOptionRepository, OrderRepository orderRepository) {
         if (menuRepository == null) {
             throw new ValidationException("MenuRepository는 null일 수 없습니다.");
         }
@@ -41,9 +47,13 @@ public class MenuServiceImpl implements MenuService {
         if (menuOptionRepository == null) {
             throw new ValidationException("MenuOptionRepository는 null일 수 없습니다.");
         }
+        if (orderRepository == null) {
+            throw new ValidationException("OrderRepository는 null일 수 없습니다.");
+        }
         this.menuRepository = menuRepository;
         this.optionGroupRepository = optionGroupRepository;
         this.menuOptionRepository = menuOptionRepository;
+        this.orderRepository = orderRepository;
     }
 
     @Override
@@ -78,5 +88,29 @@ public class MenuServiceImpl implements MenuService {
             throw new ValidationException("유효하지 않은 옵션 그룹입니다.");
         }
         return menuOptionRepository.findByGroupId(optionGroup.getGroupId());
+    }
+
+    @Override
+    public int placeOrder(List<OrderItem> orderItems, Member member) {
+        if (orderItems == null || orderItems.isEmpty()) {
+            throw new ValidationException("주문할 메뉴가 없습니다.");
+        }
+
+        for (OrderItem orderItem : orderItems) {
+            if (orderItem == null) {
+                throw new ValidationException("유효하지 않은 주문 항목이 있습니다.");
+            }
+            if (orderItem.getMenuId() <= 0) {
+                throw new ValidationException("유효하지 않은 메뉴가 포함되어 있습니다.");
+            }
+            if (orderItem.getQuantity() <= 0) {
+                throw new ValidationException("주문 수량은 1개 이상이어야 합니다.");
+            }
+            if (orderItem.getUnitPrice() < 0) {
+                throw new ValidationException("유효하지 않은 주문 금액입니다.");
+            }
+        }
+
+        return orderRepository.placeOrder(orderItems, member);
     }
 }
