@@ -50,6 +50,15 @@ public class AdminController {
         }
     }
 
+    public Category getCategoryById(int id) {
+        try {
+            return adminService.getCategoryById(id);
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+            return null;
+        }
+    }
+
     public void addOptionGroupToCategory(int categoryId, long groupId, int displayOrder) {
         try {
             adminService.addOptionGroupToCategory(categoryId, groupId, displayOrder);
@@ -71,7 +80,7 @@ public class AdminController {
     public void listMenus() {
         try {
             List<Menu> menus = adminService.getMenuList();
-            EndView.printMenus(menus);
+            EndView.printMenu(menus);
         } catch (CafeKioskException e) {
             FailView.fail(e.getMessage());
         }

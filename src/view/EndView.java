@@ -211,7 +211,7 @@ public final class EndView {
             Menu menu = menus.get(i);
             String availability = menu.isAvailable() ? "판매중" : "품절";
             String category = menu.getCategoryName() == null ? "" : " [" + menu.getCategoryName() + "]";
-            System.out.printf("%2d. %-20s | %,d원 | %s%s%n", i + 1, menu.getMenuName(), menu.getPrice(), availability, category);
+            System.out.printf("▶ [메뉴 ID: %d] %-20s | %,d원 | %s%s%n", menu.getMenuId(), menu.getMenuName(), menu.getPrice(), availability, category);
             
             // 옵션 정보 출력 추가
             List<OptionGroup> groups = menu.getOptionGroups();
