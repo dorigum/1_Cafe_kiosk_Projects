@@ -23,61 +23,60 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     public Category getCategoryById(int id) {
-        String sql = "SELECT c.category_id, c.category_name, og.group_id, og.group_name " +
-                     "FROM CATEGORY c " +
-                     "LEFT JOIN CATEGORY_OPTION_GROUP cog ON c.category_id = cog.category_id " +
-                     "LEFT JOIN OPTION_GROUP og ON cog.group_id = og.group_id " +
-                     "WHERE c.category_id = ? " +
-                     "ORDER BY cog.display_order";
+        Category category = null;
+        String catSql = "SELECT category_id, category_name FROM CATEGORY WHERE category_id = ?";
+        String optSql = "SELECT group_id FROM CATEGORY_OPTION_GROUP WHERE category_id = ? ORDER BY display_order";
                      
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, id);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                Category category = null;
-                while (rs.next()) {
-                    if (category == null) {
+        try (Connection conn = DBUtil.getConnection()) {
+            // 1. 카테고리 기본 정보 조회
+            try (PreparedStatement pstmt = conn.prepareStatement(catSql)) {
+                pstmt.setInt(1, id);
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (rs.next()) {
                         category = new Category(rs.getInt("category_id"), rs.getString("category_name"));
                     }
-                    long groupId = rs.getLong("group_id");
-                    if (groupId > 0) { // 옵션 그룹이 매핑되어 있는 경우
-                        category.addOptionGroup(new OptionGroup(groupId, rs.getString("group_name")));
+                }
+            }
+
+            // 2. 카테고리가 존재하면 매핑된 옵션 그룹 ID들 조회
+            if (category != null) {
+                List<Integer> groupIds = new ArrayList<>();
+                try (PreparedStatement pstmt = conn.prepareStatement(optSql)) {
+                    pstmt.setInt(1, id);
+                    try (ResultSet rs = pstmt.executeQuery()) {
+                        while (rs.next()) {
+                            groupIds.add(rs.getInt("group_id"));
+                        }
                     }
                 }
-                return category;
+
+                // 3. 각 그룹 ID에 해당하는 실제 OptionGroup 정보 채우기 (기존 레포지토리 활용 가능 시점)
+                OptionGroupRepository ogRepo = new OptionGroupRepositoryImpl();
+                for (int gid : groupIds) {
+                    OptionGroup og = ogRepo.findById(gid);
+                    if (og != null) {
+                        category.addOptionGroup(og);
+                    }
+                }
             }
+            return category;
         } catch (SQLException e) {
-            throw new RepositoryException("카테고리 상세 조회 중 오류가 발생했습니다.", e);
+            // 구체적인 에러 메시지를 포함하여 원인 파악 용이하게 변경
+            throw new RepositoryException("카테고리 상세 조회 중 DB 오류 발생: " + e.getMessage(), e);
         }
     }
 
     public List<Category> getAllCategories() {
-        Map<Integer, Category> categoryMap = new LinkedHashMap<>();
-        String sql = "SELECT c.category_id, c.category_name, og.group_id, og.group_name " +
-                     "FROM CATEGORY c " +
-                     "LEFT JOIN CATEGORY_OPTION_GROUP cog ON c.category_id = cog.category_id " +
-                     "LEFT JOIN OPTION_GROUP og ON cog.group_id = og.group_id " +
-                     "ORDER BY c.category_id, cog.display_order";
-                     
+        List<Category> categories = new ArrayList<>();
+        String sql = "SELECT category_id, category_name FROM CATEGORY ORDER BY category_id";
+
         try (Connection conn = DBUtil.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                int id = rs.getInt("category_id");
-                Category category = categoryMap.computeIfAbsent(id, k -> {
-                    try {
-                        return new Category(id, rs.getString("category_name"));
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-                
-                long groupId = rs.getLong("group_id");
-                if (groupId > 0) {
-                    category.addOptionGroup(new OptionGroup(groupId, rs.getString("group_name")));
-                }
+                categories.add(new Category(rs.getInt("category_id"), rs.getString("category_name")));
             }
-            return new ArrayList<>(categoryMap.values());
+            return categories;
         } catch (SQLException e) {
             throw new RepositoryException("카테고리 목록 조회 중 오류가 발생했습니다.", e);
         }

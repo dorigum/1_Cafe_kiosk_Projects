@@ -50,6 +50,15 @@ public class AdminController {
         }
     }
 
+    public Category getCategoryById(int id) {
+        try {
+            return adminService.getCategoryById(id);
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+            return null;
+        }
+    }
+
     public void addOptionGroupToCategory(int categoryId, long groupId, int displayOrder) {
         try {
             adminService.addOptionGroupToCategory(categoryId, groupId, displayOrder);
@@ -71,7 +80,7 @@ public class AdminController {
     public void listMenus() {
         try {
             List<Menu> menus = adminService.getMenuList();
-            EndView.printMenus(menus);
+            EndView.printMenu(menus);
         } catch (CafeKioskException e) {
             FailView.fail(e.getMessage());
         }
@@ -154,6 +163,15 @@ public class AdminController {
         }
     }
 
+    public void deleteOptionGroup(long groupId) {
+        try {
+            adminService.deleteOptionGroup(groupId);
+            EndView.success("옵션 그룹이 삭제되었습니다.");
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+        }
+    }
+
     public List<model.MenuOption> listMenuOptions(model.OptionGroup group) {
         try {
             List<model.MenuOption> options = adminService.getMenuOptionsByGroup(group.getGroupId());
@@ -225,6 +243,33 @@ public class AdminController {
         try {
             List<String> topMenus = adminService.getTopSellingMenus();
             EndView.printMenuSalesReport(topMenus);
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+        }
+    }
+
+    public void showDetailedPeriodStatistics(String startDate, String endDate) {
+        try {
+            Map<String, Object> stats = adminService.getSalesStatsByPeriod(startDate, endDate);
+            EndView.printDetailedPeriodReport(startDate, endDate, stats);
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+        }
+    }
+
+    public void showHourlySalesStatistics() {
+        try {
+            Map<Integer, Integer> hourlySales = adminService.getHourlySales();
+            EndView.printHourlySalesReport(hourlySales);
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+        }
+    }
+
+    public void showTopMemberStatistics(int limit) {
+        try {
+            List<Map<String, Object>> topMembers = adminService.getTopSpenders(limit);
+            EndView.printTopMemberReport(topMembers);
         } catch (CafeKioskException e) {
             FailView.fail(e.getMessage());
         }

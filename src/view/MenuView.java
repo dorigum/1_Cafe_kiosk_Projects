@@ -156,11 +156,12 @@ public class MenuView {
 		while (true) {
 			System.out.println("\n--- [메뉴 옵션 관리] ---");
 			List<model.OptionGroup> groups = adminController.listOptionGroups();
-			System.out.println("\n1. 그룹 추가 | 2. 세부 옵션 관리 | 0. 뒤로");
+			System.out.println("\n1. 그룹 추가 | 2. 세부 옵션 관리 | 3. 그룹 삭제 | 0. 뒤로");
 			int sub = readInt("선택: ");
 
 			if (sub == 1) {
-				String name = readText("새 옵션 그룹명 (예: 온도, 사이즈): ");
+				String name = readText("새 옵션 그룹명 (예: 온도, 사이즈) (취소: 0): ");
+				if (name.equals("0")) continue;
 				adminController.addOptionGroup(name);
 			} else if (sub == 2) {
 				if (groups == null || groups.isEmpty()) {
@@ -173,6 +174,18 @@ public class MenuView {
 					continue;
 				}
 				runDetailOptionManagement(adminController, groups.get(groupIdx - 1));
+			} else if (sub == 3) {
+				if (groups == null || groups.isEmpty()) {
+					FailView.fail("삭제할 옵션 그룹이 없습니다.");
+					continue;
+				}
+				int groupIdx = readInt("삭제할 그룹 번호 (취소: 0): ");
+				if (groupIdx == 0) continue;
+				if (groupIdx < 1 || groupIdx > groups.size()) {
+					FailView.fail("올바른 번호를 선택해 주세요.");
+					continue;
+				}
+				adminController.deleteOptionGroup(groups.get(groupIdx - 1).getGroupId());
 			} else if (sub == 0) {
 				break;
 			} else {
@@ -197,7 +210,8 @@ public class MenuView {
 					FailView.fail("수정할 옵션이 없습니다.");
 					continue;
 				}
-				int optIdx = readInt("수정할 옵션 번호: ");
+				int optIdx = readInt("수정할 옵션 번호 (취소: 0): ");
+				if (optIdx == 0) continue;
 				if (optIdx < 1 || optIdx > options.size()) {
 					FailView.fail("올바른 번호를 선택해 주세요.");
 					continue;
@@ -212,7 +226,8 @@ public class MenuView {
 					FailView.fail("삭제할 옵션이 없습니다.");
 					continue;
 				}
-				int optIdx = readInt("삭제할 옵션 번호: ");
+				int optIdx = readInt("삭제할 옵션 번호 (취소: 0): ");
+				if (optIdx == 0) continue;
 				if (optIdx < 1 || optIdx > options.size()) {
 					FailView.fail("올바른 번호를 선택해 주세요.");
 					continue;
@@ -237,7 +252,8 @@ public class MenuView {
 				String name = readText("새 카테고리명: ");
 				adminController.addCategory(name);
 			} else if (sub == 2) {
-				int id = readInt("삭제할 카테고리 ID: ");
+				int id = readInt("삭제할 카테고리 ID (취소: 0): ");
+				if (id == 0) continue;
 				adminController.deleteCategory(id);
 			} else if (sub == 3) {
 				runCategoryOptionMapping(adminController);
@@ -255,13 +271,31 @@ public class MenuView {
 		if (categoryId == 0) return;
 
 		while (true) {
-			System.out.println("\n--- [카테고리별 옵션 그룹 설정] ---");
-			List<model.OptionGroup> allGroups = adminController.listOptionGroups();
-			System.out.println("\n1. 옵션 그룹 추가 | 2. 옵션 그룹 삭제 | 0. 뒤로");
+			// 1. 현재 카테고리 정보와 매핑된 옵션 목록 로드
+			model.Category category = adminController.getCategoryById(categoryId);
+			if (category == null) {
+				FailView.fail("존재하지 않는 카테고리입니다.");
+				break;
+			}
+
+			System.out.println("\n=== [" + category.getCategoryName() + "] 카테고리 옵션 설정 ===");
+			List<model.OptionGroup> currentGroups = category.getOptionGroups();
+			if (currentGroups == null || currentGroups.isEmpty()) {
+				System.out.println("  (현재 매핑된 옵션 그룹이 없습니다)");
+			} else {
+				System.out.println("  [현재 매핑된 목록]");
+				for (int i = 0; i < currentGroups.size(); i++) {
+					System.out.printf("  %d. %s\n", i + 1, currentGroups.get(i).getGroupName());
+				}
+			}
+
+			System.out.println("\n1. 옵션 그룹 추가 매핑 | 2. 옵션 그룹 매핑 삭제 | 0. 뒤로");
 			int sub = readInt("선택: ");
 
 			if (sub == 1) {
-				int groupIdx = readInt("추가할 옵션 그룹 번호: ");
+				List<model.OptionGroup> allGroups = adminController.listOptionGroups();
+				int groupIdx = readInt("추가할 옵션 그룹 번호 (위 전체 목록에서 선택, 취소: 0): ");
+				if (groupIdx == 0) continue;
 				if (groupIdx < 1 || groupIdx > allGroups.size()) {
 					FailView.fail("올바른 번호를 선택해 주세요.");
 					continue;
@@ -269,12 +303,17 @@ public class MenuView {
 				int displayOrder = readInt("표시 순서: ");
 				adminController.addOptionGroupToCategory(categoryId, allGroups.get(groupIdx - 1).getGroupId(), displayOrder);
 			} else if (sub == 2) {
-				int groupIdx = readInt("삭제할 옵션 그룹 번호: ");
-				if (groupIdx < 1 || groupIdx > allGroups.size()) {
-					FailView.fail("올바른 번호를 선택해 주세요.");
+				if (currentGroups == null || currentGroups.isEmpty()) {
+					FailView.fail("삭제할 매핑 정보가 없습니다.");
 					continue;
 				}
-				adminController.removeOptionGroupFromCategory(categoryId, allGroups.get(groupIdx - 1).getGroupId());
+				int groupIdx = readInt("삭제할 매핑 번호 (위 [현재 매핑 목록] 번호 입력, 취소: 0): ");
+				if (groupIdx == 0) continue;
+				if (groupIdx < 1 || groupIdx > currentGroups.size()) {
+					FailView.fail("목록에 있는 번호를 선택해 주세요.");
+					continue;
+				}
+				adminController.removeOptionGroupFromCategory(categoryId, currentGroups.get(groupIdx - 1).getGroupId());
 			} else if (sub == 0) {
 				break;
 			}
@@ -282,8 +321,8 @@ public class MenuView {
 	}
 	private void runMenuManagement(AdminController adminController) {
 		while (true) {
-			System.out.println("\n--- [메뉴 관리] ---");
-			adminController.listMenus();
+			System.out.println("\n--- [메뉴 정보 관리] ---");
+			adminController.listMenus(); // 진입 시 바로 목록과 ID 출력
 			System.out.println("\n1. 등록 | 2. 삭제 | 0. 뒤로");
 			int sub = readInt("선택: ");
 
@@ -304,7 +343,8 @@ public class MenuView {
 					}
 				}
 			} else if (sub == 2) {
-				long menuId = readLong("삭제할 메뉴 ID: ");
+				long menuId = readLong("삭제할 메뉴의 ID 번호를 입력하세요 (취소: 0): ");
+				if (menuId == 0) continue;
 				adminController.deleteMenu(menuId);
 			} else if (sub == 0) {
 				break;
@@ -322,7 +362,8 @@ public class MenuView {
 			int sub = readInt("선택: ");
 
 			if (sub == 1) {
-				long memberId = readLong("삭제할 회원 ID: ");
+				long memberId = readLong("삭제할 회원 ID (취소: 0): ");
+				if (memberId == 0) continue;
 				adminController.deleteMember(memberId);
 			} else if (sub == 0) {
 				break;
@@ -353,10 +394,13 @@ public class MenuView {
 
 	private void runStatisticsManagement(AdminController adminController) {
 		while (true) {
-			System.out.println("\n--- [매출 통계 및 그래프 조회] ---");
-			System.out.println("1. 날짜별 매출 추이");
-			System.out.println("2. 카테고리별 매출 추이");
-			System.out.println("3. 메뉴별 매출 추이");
+			System.out.println("\n--- [매출 통계 및 분석 고도화] ---");
+			System.out.println("1. 날짜별 매출 추이 (그래프)");
+			System.out.println("2. 카테고리별 매출 분석 (비율)");
+			System.out.println("3. 메뉴별 판매 순위 (Top 3)");
+			System.out.println("4. 기간별 상세 조회 (객단가 분석)");
+			System.out.println("5. 시간대별 매출 분석 (피크타임)");
+			System.out.println("6. 우수 회원 기여도 분석 (VVIP)");
 			System.out.println("0. 뒤로");
 			int choice = readInt("선택: ");
 
@@ -364,10 +408,21 @@ public class MenuView {
 				case 1: runDateStatistics(adminController); break;
 				case 2: adminController.showCategoryStatistics(); break;
 				case 3: adminController.showMenuStatistics(); break;
+				case 4: runDetailedPeriodStatistics(adminController); break;
+				case 5: adminController.showHourlySalesStatistics(); break;
+				case 6: adminController.showTopMemberStatistics(5); break;
 				case 0: return;
 				default: FailView.fail("잘못된 선택입니다.");
 			}
 		}
+	}
+
+	private void runDetailedPeriodStatistics(AdminController adminController) {
+		System.out.println("\n--- [기간별 상세 조회] ---");
+		String start = readText("시작일 (YYYY-MM-DD) (취소: 0): ");
+		if (start.equals("0")) return;
+		String end = readText("종료일 (YYYY-MM-DD): ");
+		adminController.showDetailedPeriodStatistics(start, end);
 	}
 
 	private void runDateStatistics(AdminController adminController) {
