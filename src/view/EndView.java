@@ -321,6 +321,15 @@ public final class EndView {
 		System.out.println(" 9. 주문하기");
 	}
 
+	public static void printCartManagementMenu() {
+		System.out.println("\n===== 장바구니 관리 =====");
+		System.out.println("1. 상품 삭제");
+		System.out.println("2. 수량 변경");
+		System.out.println("3. 장바구니 비우기");
+		System.out.println("9. 주문하기");
+		System.out.println("0. 뒤로");
+	}
+
 	public static void printCart(List<OrderItem> cart) {
 		System.out.println("\n===== 장바구니 조회 =====");
 		if (cart == null || cart.isEmpty()) {
