@@ -14,6 +14,8 @@ public interface MemberRepository {
 
 	boolean deleteMember(long memberId);
 
+	boolean updatePoint(long memberId, int amount);
+
 	boolean isPhoneExists(String phone);
 
 	boolean register(Member member);

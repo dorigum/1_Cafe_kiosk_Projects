@@ -124,6 +124,15 @@ public class AdminController {
         }
     }
 
+    public void updateMemberPoint(long id, int amount) {
+        try {
+            adminService.updateMemberPoint(id, amount);
+            EndView.success("회원 포인트가 수정되었습니다.");
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+        }
+    }
+
     public void listOrders() {
         try {
             List<Order> orders = adminService.getOrderList();

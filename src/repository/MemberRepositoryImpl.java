@@ -123,4 +123,17 @@ public class MemberRepositoryImpl implements MemberRepository {
 			throw new RepositoryException("회원 삭제 중 오류가 발생했습니다.", e);
 		}
 	}
+
+	// 포인트 수정 (증감)
+	@Override
+	public boolean updatePoint(long memberId, int amount) {
+		String sql = "UPDATE MEMBER SET point_balance = point_balance + ? WHERE member_id = ?";
+		try (Connection conn = DBUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, amount);
+			pstmt.setLong(2, memberId);
+			return pstmt.executeUpdate() > 0;
+		} catch (SQLException e) {
+			throw new RepositoryException("포인트 수정 중 오류가 발생했습니다.", e);
+		}
+	}
 }

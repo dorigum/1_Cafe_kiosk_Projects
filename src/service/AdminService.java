@@ -47,6 +47,8 @@ public interface AdminService {
 
     void deleteMember(long id);
 
+    void updateMemberPoint(long id, int amount);
+
     // 주문 관리
     List<Order> getOrderList();
 

@@ -358,13 +358,19 @@ public class MenuView {
 		while (true) {
 			System.out.println("\n--- [회원 관리] ---");
 			adminController.listMembers();
-			System.out.println("\n1. 삭제 | 0. 뒤로");
+			System.out.println("\n1. 삭제 | 2. 포인트 수정 | 0. 뒤로");
 			int sub = readInt("선택: ");
 
 			if (sub == 1) {
 				long memberId = readLong("삭제할 회원 ID (취소: 0): ");
 				if (memberId == 0) continue;
 				adminController.deleteMember(memberId);
+			} else if (sub == 2) {
+				long memberId = readLong("포인트를 수정할 회원 ID (취소: 0): ");
+				if (memberId == 0) continue;
+				System.out.println("지급할 금액은 양수(+), 차감할 금액은 음수(-)로 입력하세요.");
+				int amount = readInt("수정할 포인트 금액: ");
+				adminController.updateMemberPoint(memberId, amount);
 			} else if (sub == 0) {
 				break;
 			} else {

@@ -186,6 +186,16 @@ public class AdminServiceImpl implements AdminService {
 		}
 	}
 
+	@Override
+	public void updateMemberPoint(long id, int amount) {
+		if (amount == 0) {
+			throw new ValidationException("수정할 포인트 금액은 0원일 수 없습니다.");
+		}
+		if (!memberRepository.updatePoint(id, amount)) {
+			throw new NotFoundException("포인트를 수정할 회원을 찾을 수 없습니다.");
+		}
+	}
+
 	// --- 주문 관리 ---
 	public List<Order> getOrderList() {
 		return orderRepository.getAllOrders();
