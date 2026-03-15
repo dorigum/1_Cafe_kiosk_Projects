@@ -115,6 +115,16 @@ public class AdminController {
         }
     }
 
+    public Member getMemberById(long id) {
+        try {
+            List<Member> members = adminService.getMemberList();
+            return members.stream().filter(m -> m.getMemberId() == id).findFirst().orElse(null);
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+            return null;
+        }
+    }
+
     public void deleteMember(long id) {
         try {
             adminService.deleteMember(id);
@@ -124,10 +134,20 @@ public class AdminController {
         }
     }
 
-    public void updateMemberPoint(long id, int amount) {
+    public void updateMemberRole(long id, String newRole) {
         try {
-            adminService.updateMemberPoint(id, amount);
-            EndView.success("회원 포인트가 수정되었습니다.");
+            adminService.updateMemberRole(id, newRole);
+            EndView.success("회원 등급이 변경되었습니다.");
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+        }
+    }
+
+    public void updateMemberPoint(long id, int amount, String reason) {
+        try {
+            adminService.updateMemberPoint(id, amount, reason);
+            String sign = amount > 0 ? "+" : "";
+            EndView.success(String.format("회원 포인트가 수정되었습니다. (%s%d원)\n사유: %s", sign, amount, reason));
         } catch (CafeKioskException e) {
             FailView.fail(e.getMessage());
         }

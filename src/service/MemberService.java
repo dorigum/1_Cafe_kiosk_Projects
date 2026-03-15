@@ -3,6 +3,7 @@ package service;
 import model.Member;
 import model.Order;
 import model.OrderItem;
+import model.PointHistory;
 import model.Wishlist;
 
 import java.util.List;
@@ -13,6 +14,8 @@ public interface MemberService {
 	boolean register(String phone, String password, int age);
 
 	List<Order> getOrderHistory(Member member);
+
+	List<PointHistory> getPointHistory(Member member);
 
 	List<Wishlist> getWishlist(Member member);
 

@@ -5,6 +5,7 @@ import exception.ConflictException;
 import exception.ValidationException;
 import model.Member;
 import model.OrderItem;
+import model.PointHistory;
 import model.Wishlist;
 import repository.MemberRepository;
 import repository.MemberRepositoryImpl;
@@ -86,6 +87,12 @@ public class MemberServiceImpl implements MemberService {
 	public List<Order> getOrderHistory(Member member) {
 		validateMember(member);
 		return memberRepository.getOrderHistory(member.getMemberId());
+	}
+
+	@Override
+	public List<PointHistory> getPointHistory(Member member) {
+		validateMember(member);
+		return memberRepository.getPointHistory(member.getMemberId());
 	}
 
 	@Override

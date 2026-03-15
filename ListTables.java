@@ -6,7 +6,7 @@ public class ListTables {
     public static void main(String[] args) {
         try {
             Properties props = new Properties();
-            props.load(new FileInputStream("C:\\VSCode_Projects\\1_Cafe_kiosk\\resources\\dbinfo.properties"));
+            props.load(new FileInputStream("C:\\Users\\koo\\1_Cafe_kiosk\\resources\\dbinfo.properties"));
             String url = props.getProperty("db.url");
             String user = props.getProperty("db.user");
             String password = props.getProperty("db.password");

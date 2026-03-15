@@ -2,6 +2,7 @@ package service;
 
 import exception.BusinessRuleException;
 import exception.NotFoundException;
+import exception.RepositoryException;
 import exception.ValidationException;
 import model.*;
 import repository.*;
@@ -181,19 +182,71 @@ public class AdminServiceImpl implements AdminService {
 	}
 
 	public void deleteMember(long id) {
-		if (!memberRepository.deleteMember(id)) {
+		Member member = memberRepository.getMemberById(id);
+		if (member == null) {
 			throw new NotFoundException("삭제할 회원이 없습니다.");
+		}
+
+		if ("ADMIN".equalsIgnoreCase(member.getRole())) {
+			throw new BusinessRuleException("관리자 계정은 직접 삭제할 수 없습니다. 삭제하려면 먼저 일반 회원으로 등급을 변경해야 합니다.");
+		}
+
+		if (!memberRepository.deleteMember(id)) {
+			throw new RepositoryException("회원 삭제 중 알 수 없는 오류가 발생했습니다.");
 		}
 	}
 
 	@Override
-	public void updateMemberPoint(long id, int amount) {
+	public void updateMemberRole(long id, String newRole) {
+		if (newRole == null || (!newRole.equalsIgnoreCase("ADMIN") && !newRole.equalsIgnoreCase("USER"))) {
+			throw new ValidationException("올바른 등급(ADMIN, USER)을 입력해 주세요.");
+		}
+
+		Member targetMember = memberRepository.getMemberById(id);
+		if (targetMember == null) {
+			throw new NotFoundException("해당 회원을 찾을 수 없습니다.");
+		}
+
+		// 1인 관리자 제한 체크: 새 등급을 ADMIN으로 하려는 경우
+		if (newRole.equalsIgnoreCase("ADMIN")) {
+			List<Member> allMembers = memberRepository.getAllMembers();
+			boolean adminExists = allMembers.stream().anyMatch(m -> "ADMIN".equalsIgnoreCase(m.getRole()) && m.getMemberId() != id);
+			
+			if (adminExists) {
+				throw new BusinessRuleException("이미 관리자가 존재합니다. 관리자는 1명만 설정할 수 있습니다.");
+			}
+		}
+
+		if (!memberRepository.updateRole(id, newRole)) {
+			throw new RepositoryException("등급 변경 중 오류가 발생했습니다.");
+		}
+	}
+
+	@Override
+	public void updateMemberPoint(long id, int amount, String reason) {
 		if (amount == 0) {
 			throw new ValidationException("수정할 포인트 금액은 0원일 수 없습니다.");
 		}
-		if (!memberRepository.updatePoint(id, amount)) {
+		
+		if (reason == null || reason.trim().isEmpty()) {
+			throw new ValidationException("포인트 수정 사유를 반드시 입력해 주세요.");
+		}
+
+		Member member = memberRepository.getMemberById(id);
+		if (member == null) {
 			throw new NotFoundException("포인트를 수정할 회원을 찾을 수 없습니다.");
 		}
+
+		if ("ADMIN".equalsIgnoreCase(member.getRole())) {
+			throw new BusinessRuleException("관리자 등급의 회원은 포인트를 수정할 수 없습니다.");
+		}
+
+		if (!memberRepository.updatePoint(id, amount)) {
+			throw new RepositoryException("포인트 수정 중 알 수 없는 오류가 발생했습니다.");
+		}
+		
+		// [신규] 포인트 변동 히스토리 저장
+		memberRepository.savePointHistory(id, amount, reason);
 	}
 
 	// --- 주문 관리 ---

@@ -41,12 +41,21 @@ public class MemberController {
 	}
 
 	public void showOrderHistory(Member member) {
-		try {
-			List<Order> orders = memberService.getOrderHistory(member);
-			EndView.printOrderHistory(member, orders);
-		} catch (CafeKioskException e) {
-			FailView.fail(e.getMessage());
-		}
+	    try {
+	        List<Order> orders = memberService.getOrderHistory(member);
+	        EndView.printOrders(orders);
+	    } catch (CafeKioskException e) {
+	        FailView.fail(e.getMessage());
+	    }
+	}
+
+	public void showPointHistory(Member member) {
+	    try {
+	        List<PointHistory> history = memberService.getPointHistory(member);
+	        EndView.printPointHistory(member, history);
+	    } catch (CafeKioskException e) {
+	        FailView.fail(e.getMessage());
+	    }
 	}
 
 	public void showWishlist(Member member) {

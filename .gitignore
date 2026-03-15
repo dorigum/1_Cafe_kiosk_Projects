@@ -13,6 +13,6 @@ desktop.ini
 # Logs
 *.log
 
-dbinfo.properties
+dbInfo.properties
 
 .vscode

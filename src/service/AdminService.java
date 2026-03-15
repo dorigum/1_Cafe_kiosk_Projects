@@ -47,7 +47,9 @@ public interface AdminService {
 
     void deleteMember(long id);
 
-    void updateMemberPoint(long id, int amount);
+    void updateMemberRole(long id, String newRole);
+
+    void updateMemberPoint(long id, int amount, String reason);
 
     // 주문 관리
     List<Order> getOrderList();
