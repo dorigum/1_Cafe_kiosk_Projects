@@ -4,7 +4,7 @@
 - **목표**: MVC 패턴을 적용한 콘솔 기반 카페 키오스크 시스템 구축 (Layered Architecture)
 - **주요 기능**: 회원/비회원 주문 서비스 및 관리자 모드 (상품/카테고리/회원/매출 관리)
 - **개발 환경**: Java 18 (OpenJDK), **MySQL 8.0**, JDBC (mysql-connector-j-9.6.0)
-
+---
 ## 2. 주요 기능 요구사항 (진행 현황)
 
 ### 👤 사용자(회원/비회원) 기능
@@ -35,7 +35,7 @@
     - **시간대별 매출 분석**: 하루 중 주문 집중 시간대(피크타임) 파악 (신규)
     - **우수 회원 기여도 분석**: 누적 결제액 기준 상위 **VVIP 회원** 추출 (신규)
 - [x] **주문 관리**: 전체 주문 목록 확인 및 **결제 취소(CANCELLED)** 처리
-
+---
 ## 3. 시스템 아키텍처 (Layered Architecture)
 - **Model**: `Menu`, `Member`, `Order`, `MenuOption`, `OptionGroup`, `PointHistory` (신규)
 - **View**: `StartView` (진입점), `MenuView` (메인 루프), `EndView` (출력 전담), `FailView` (에러 전담), `OrderingView` (주문 전담)
@@ -43,7 +43,7 @@
 - **Service**: `AdminService`, `MemberService`, `MenuService`
 - **Repository**: `MenuRepository`, `MemberRepository`, `CategoryRepository`, `OrderRepository`, `MenuOptionRepository`, `OptionGroupRepository`
 - **Configuration**: `dbInfo.properties` (파일명 대소문자 수정 및 소스 폴더 경로 최적화)
-
+---
 ## 4. 데이터 설계 (MySQL 테이블 구조)
 | 구분 | 테이블명 | 설명 |
 | :--- | :--- | :--- |
@@ -60,7 +60,8 @@
 | **OrderItemOption**| ORDER_ITEM_OPTION | 주문 시점에 선택된 세부 옵션 기록 |
 | **Wishlist** | WISHLIST | 회원의 찜 목록 |
 
-## 5. 진행 현황 및 히스토리
+---
+## 5. 진행 현황 및 히스토리(최신 업데이트 순)
 
 ### [2026-03-15] 포인트 관리 고도화 및 관리자 보안 시스템 구축
 - **포인트 투명성 강화 (History System)**:
@@ -168,13 +169,13 @@
     - `lib` 폴더를 생성하고 `mysql-connector-j-9.6.0.jar` 라이브러리 추가 및 빌드 경로(Build Path) 설정 완료.
 - **초기 매출 통계 시스템 구축**:
     - 누적 매출 합계 및 인기 메뉴 Top 3 추출을 위한 초기 쿼리 및 Repository 구현 완료.
-
+---
 ## 6. 개발 및 협업 가이드 (실행 전 확인)
 1.  **MySQL 설정**: `resources/DDL.sql` -> `resources/DML.sql` -> `resources/admin.sql` 순서로 실행
 2.  **DB 접속 정보**: `resources/dbInfo.properties` 파일에서 본인의 MySQL 계정/비번 수정
 3.  **라이브러리**: `lib/mysql-connector-j-9.6.0.jar`가 Build Path에 포함되어 있는지 확인
 4.  **인코딩**: 이클립스 실행 설정(Run Configurations)에서 **Encoding을 UTF-8**로 지정 필수
-
+---
 ## 7. 협업을 위한 변경사항
 - **최신 DDL 반영 및 테이블 구조 최적화**:
   - `ORDERITEM` → `ORDER_ITEM`, `OPTIONGROUP` → `OPTION_GROUP` 등 테이블명 명명 규칙 통일 (Snake Case)
