@@ -10,6 +10,8 @@ import model.OrderItem;
 import service.MemberService;
 import view.EndView;
 import view.FailView;
+import model.Menu;
+import java.util.List;
 
 public class MemberController {
 	private final MemberService memberService;
@@ -95,6 +97,33 @@ public class MemberController {
 		} catch (CafeKioskException e) {
 			FailView.fail(e.getMessage());
 			return null;
+		}
+	}
+
+	public void register(String phone, String password, int age, int preferredCategoryId) {
+		try {
+			memberService.register(phone, password, age, preferredCategoryId);
+			EndView.success("회원가입이 완료되었습니다!");
+		} catch (CafeKioskException e) {
+			FailView.fail(e.getMessage());
+		}
+	}
+
+	public List<Menu> getRecommendedMenus(Member member) {
+		try {
+			return memberService.getRecommendedMenus(member.getPreferredCategoryId());
+		} catch (CafeKioskException e) {
+			FailView.fail(e.getMessage());
+			return null;
+		}
+	}
+
+	public void updatePreferredCategory(Member member, int categoryId) {
+		try {
+			memberService.updatePreferredCategory(member.getMemberId(), categoryId);
+			EndView.success("선호 카테고리가 변경되었습니다!");
+		} catch (CafeKioskException e) {
+			FailView.fail(e.getMessage());
 		}
 	}
 }

@@ -5,6 +5,7 @@ import controller.MemberController;
 import controller.MenuController;
 import model.Member;
 import model.OrderItem;
+import model.Menu;
 
 import java.util.Scanner;
 import java.util.List;
@@ -47,9 +48,31 @@ public class MenuView {
 			String phone = readText("전화번호 (010-1234-5678): ");
 			String password = readText("비밀번호 (4자리 이상): ");
 			int age = readInt("나이: ");
-			memberController.register(phone, password, age);
-			return;
-		} else if (choice == 0) {
+
+			// 카테고리 목록 출력
+			System.out.println("\n선호 카테고리를 선택해주세요.");
+			System.out.println("1. 커피");
+			System.out.println("2. 논커피");
+			System.out.println("3. 디저트");
+			System.out.println("0. 선택 안함");
+			int categoryChoice = readInt("선택: ");
+
+			int categoryId = 0;
+			switch (categoryChoice) {
+			case 1:
+				categoryId = 1;
+				break;
+			case 2:
+				categoryId = 2;
+				break;
+			case 3:
+				categoryId = 3;
+				break;
+			default:
+				categoryId = 0;
+			}
+
+			memberController.register(phone, password, age, categoryId);
 			return;
 		}
 
@@ -65,6 +88,8 @@ public class MenuView {
 			System.out.println("2. 찜 목록 보기");
 			System.out.println("3. 퀵오더 (최근 주문 바로 주문)");
 			System.out.println("4. 주문하기 (메뉴판 보기)");
+			System.out.println("5. 추천 메뉴 보기"); // ← 추가
+			System.out.println("6. 선호 카테고리 변경"); // ← 추가
 			System.out.println("0. 로그아웃");
 			int sub = readInt("선택: ");
 
@@ -79,6 +104,36 @@ public class MenuView {
 				}
 			} else if (sub == 4) {
 				new OrderingView(scanner).run(menuController, member);
+			} else if (sub == 5) {
+				List<Menu> recommended = memberController.getRecommendedMenus(member);
+				if (recommended == null || recommended.isEmpty()) {
+					System.out.println("선호 카테고리를 먼저 설정해주세요.");
+				} else {
+					System.out.println("\n===== 추천 메뉴 =====");
+					recommended.forEach(m -> System.out.printf("- %s | %,d원\n", m.getMenuName(), m.getPrice()));
+				}
+			} else if (sub == 6) {
+				System.out.println("\n선호 카테고리를 선택해주세요.");
+				System.out.println("1. 커피");
+				System.out.println("2. 논커피");
+				System.out.println("3. 디저트");
+				System.out.println("0. 선택 안함");
+				int categoryChoice = readInt("선택: ");
+				int categoryId = 0;
+				switch (categoryChoice) {
+				case 1:
+					categoryId = 1;
+					break;
+				case 2:
+					categoryId = 2;
+					break;
+				case 3:
+					categoryId = 3;
+					break;
+				default:
+					categoryId = 0;
+				}
+				memberController.updatePreferredCategory(member, categoryId);
 			} else if (sub == 0) {
 				EndView.success("로그아웃 되었습니다.");
 				break;

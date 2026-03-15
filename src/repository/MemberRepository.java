@@ -18,4 +18,5 @@ public interface MemberRepository {
 
 	boolean register(Member member);
 
+	void updatePreferredCategory(long memberId, int categoryId);
 }

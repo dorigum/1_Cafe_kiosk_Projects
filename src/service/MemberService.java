@@ -1,6 +1,7 @@
 package service;
 
 import model.Member;
+import model.Menu;
 import model.Order;
 import model.OrderItem;
 import model.Wishlist;
@@ -21,4 +22,10 @@ public interface MemberService {
 	void removeWishlist(long wishlistId);
 
 	Order getQuickOrder(Member member);
+
+	List<Menu> getRecommendedMenus(int categoryId); // ← 추가
+
+	void updatePreferredCategory(long memberId, int categoryId); // ← 추가
+
+	boolean register(String phone, String password, int age, int preferredCategoryId);
 }
