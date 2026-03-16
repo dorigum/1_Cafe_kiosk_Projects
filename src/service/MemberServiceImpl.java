@@ -192,9 +192,21 @@ public class MemberServiceImpl implements MemberService {
 		Member member = new Member(phone, password, age);
 		member.setPreferredCategoryId(preferredCategoryId);
 		boolean result = memberRepository.register(member);
+
 		if (!result) {
 			throw new BusinessRuleException("회원가입에 실패했습니다.");
 		}
+
+		// 회원가입 성공 후 보너스 포인트 지급 (1000P)
+		try {
+			Member registered = memberRepository.login(phone, password);
+			if (registered != null) {
+				updatePoint(registered.getMemberId(), 1000, "회원가입 축하 포인트");
+			}
+		} catch (Exception e) {
+			System.err.println("회원가입 보너스 포인트 지급 중 오류: " + e.getMessage());
+		}
+
 		return true;
 	}
 
