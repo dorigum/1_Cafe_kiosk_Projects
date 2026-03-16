@@ -7,6 +7,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS `ORDER_ITEM_OPTION`;
 DROP TABLE IF EXISTS `ORDER_ITEM`;
 DROP TABLE IF EXISTS `ORDERS`;
+DROP TABLE IF EXISTS `POINT_HISTORY`;
 DROP TABLE IF EXISTS `WISHLIST`;
 DROP TABLE IF EXISTS `MENU_OPTION_GROUP`;
 DROP TABLE IF EXISTS `CATEGORY_OPTION_GROUP`;  -- 신규 추가
@@ -103,6 +104,16 @@ CREATE TABLE `ORDER_ITEM_OPTION` (
   `order_item_id` bigint NOT NULL,
   `option_id` int NOT NULL,
   PRIMARY KEY (`order_item_id`, `option_id`)
+);
+
+-- 신규: 포인트 변동 내역 테이블
+CREATE TABLE `POINT_HISTORY` (
+  `history_id` int PRIMARY KEY AUTO_INCREMENT,
+  `member_id` bigint NOT NULL,
+  `amount` int NOT NULL COMMENT '변동 금액 (양수: 적립, 음수: 사용)',
+  `reason` varchar(255) NOT NULL COMMENT '변동 사유',
+  `created_at` datetime NOT NULL DEFAULT (now()),
+  FOREIGN KEY (`member_id`) REFERENCES `MEMBER` (`member_id`) ON DELETE CASCADE
 );
 
 -- 4. 인덱스 설정

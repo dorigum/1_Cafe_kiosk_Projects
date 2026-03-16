@@ -13,24 +13,11 @@ public class MemberRepositoryImpl implements MemberRepository {
 
 	@Override
 	public void savePointHistory(long memberId, int amount, String reason) {
-		String checkSql = "CREATE TABLE IF NOT EXISTS POINT_HISTORY (" +
-				"history_id INT AUTO_INCREMENT PRIMARY KEY, " +
-				"member_id BIGINT NOT NULL, " +
-				"amount INT NOT NULL, " +
-				"reason VARCHAR(255) NOT NULL, " +
-				"created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
-				"FOREIGN KEY (member_id) REFERENCES MEMBER(member_id) ON DELETE CASCADE)";
-		
 		String insertSql = "INSERT INTO POINT_HISTORY (member_id, amount, reason) VALUES (?, ?, ?)";
 		
 		try (Connection conn = DBUtil.getConnection();
-			 Statement stmt = conn.createStatement();
 			 PreparedStatement pstmt = conn.prepareStatement(insertSql)) {
 			
-			// 1. 테이블 존재 여부 보장 (안정성)
-			stmt.execute(checkSql);
-			
-			// 2. 히스토리 저장
 			pstmt.setLong(1, memberId);
 			pstmt.setInt(2, amount);
 			pstmt.setString(3, reason);
@@ -63,8 +50,7 @@ public class MemberRepositoryImpl implements MemberRepository {
 			}
 			return historyList;
 		} catch (SQLException e) {
-			// 테이블이 아직 없는 경우 빈 목록 반환
-			return historyList;
+			throw new RepositoryException("포인트 내역 조회 중 오류가 발생했습니다.", e);
 		}
 	}
 
