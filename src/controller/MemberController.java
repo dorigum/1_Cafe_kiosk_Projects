@@ -109,6 +109,7 @@ public class MemberController {
 	public void updatePreferredCategory(Member member, int categoryId) {
 		try {
 			memberService.updatePreferredCategory(member.getMemberId(), categoryId);
+			member.setPreferredCategoryId(categoryId);
 			EndView.success("선호 카테고리가 변경되었습니다!");
 		} catch (CafeKioskException e) {
 			FailView.fail(e.getMessage());
