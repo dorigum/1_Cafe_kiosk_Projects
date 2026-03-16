@@ -1,6 +1,7 @@
 package service;
 
 import model.Member;
+import model.Menu;
 import model.Order;
 import model.OrderItem;
 import model.PointHistory;
@@ -23,7 +24,7 @@ public interface MemberService {
 
 	void removeWishlist(long wishlistId);
 
-	List<OrderItem> getQuickOrder(Member member);
+	Order getQuickOrder(Member member);
 
 	/**
 	 * 포인트 잔액을 업데이트하고 히스토리를 저장합니다.
@@ -34,4 +35,9 @@ public interface MemberService {
 	 */
 	void updatePoint(long memberId, int amount, String reason);
 
+	List<Menu> getRecommendedMenus(int categoryId);
+
+	void updatePreferredCategory(long memberId, int categoryId);
+
+	boolean register(String phone, String password, int age, int preferredCategoryId);
 }

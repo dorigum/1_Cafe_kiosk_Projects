@@ -76,9 +76,11 @@ public class MemberRepositoryImpl implements MemberRepository {
 			pstmt.setString(2, password);
 			try (ResultSet rs = pstmt.executeQuery()) {
 				if (rs.next()) {
-					return new Member(rs.getLong("member_id"), rs.getString("phone"), rs.getString("password"),
+					Member member = new Member(rs.getLong("member_id"), rs.getString("phone"), rs.getString("password"),
 							rs.getInt("age"), rs.getInt("point_balance"), rs.getString("role"),
 							rs.getTimestamp("created_at"));
+					member.setPreferredCategoryId(rs.getInt("preferred_category_id")); // ← 추가
+					return member;
 				}
 			}
 		} catch (SQLException e) {
@@ -89,11 +91,13 @@ public class MemberRepositoryImpl implements MemberRepository {
 
 	// 회원가입
 	public boolean register(Member member) {
-		String sql = "INSERT INTO MEMBER (phone, password, age) VALUES (?, ?, ?)";
+		String sql = "INSERT INTO MEMBER (phone, password, age, preferred_category_id) VALUES (?, ?, ?, ?)";
 		try (Connection conn = DBUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, member.getPhone());
 			pstmt.setString(2, member.getPassword());
 			pstmt.setInt(3, member.getAge());
+			pstmt.setInt(4, member.getPreferredCategoryId());
+
 			return pstmt.executeUpdate() > 0;
 		} catch (SQLException e) {
 			throw new RepositoryException("회원가입 처리 중 오류가 발생했습니다.", e);
@@ -181,9 +185,11 @@ public class MemberRepositoryImpl implements MemberRepository {
 				Statement stmt = conn.createStatement();
 				ResultSet rs = stmt.executeQuery(sql)) {
 			while (rs.next()) {
-				members.add(new Member(rs.getLong("member_id"), rs.getString("phone"), rs.getString("password"),
+				Member m = new Member(rs.getLong("member_id"), rs.getString("phone"), rs.getString("password"),
 						rs.getInt("age"), rs.getInt("point_balance"), rs.getString("role"),
-						rs.getTimestamp("created_at")));
+						rs.getTimestamp("created_at"));
+				m.setPreferredCategoryId(rs.getInt("preferred_category_id")); // ← 추가
+				members.add(m);
 			}
 			return members;
 		} catch (SQLException e) {
@@ -224,6 +230,18 @@ public class MemberRepositoryImpl implements MemberRepository {
 			return pstmt.executeUpdate() > 0;
 		} catch (SQLException e) {
 			throw new RepositoryException("등급 변경 중 오류가 발생했습니다.", e);
+		}
+	}
+
+	@Override
+	public void updatePreferredCategory(long memberId, int categoryId) {
+		String sql = "UPDATE MEMBER SET preferred_category_id = ? WHERE member_id = ?";
+		try (Connection conn = DBUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, categoryId);
+			pstmt.setLong(2, memberId);
+			pstmt.executeUpdate();
+		} catch (SQLException e) {
+			throw new RepositoryException("선호 카테고리 수정 중 오류가 발생했습니다.", e);
 		}
 	}
 }
