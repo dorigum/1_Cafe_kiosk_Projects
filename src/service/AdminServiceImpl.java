@@ -165,7 +165,18 @@ public class AdminServiceImpl implements AdminService {
 		if (name == null || name.trim().isEmpty()) {
 			throw new ValidationException("옵션 그룹명은 비어 있을 수 없습니다.");
 		}
-		optionGroupRepository.save(new OptionGroup(name.trim()));
+		
+		String trimmedName = name.trim();
+		// 중복 체크 로직 추가
+		List<OptionGroup> existingGroups = optionGroupRepository.findAll();
+		boolean isDuplicate = existingGroups.stream()
+				.anyMatch(g -> g.getGroupName().equalsIgnoreCase(trimmedName));
+		
+		if (isDuplicate) {
+			throw new BusinessRuleException("이미 존재하는 옵션 그룹명입니다: " + trimmedName);
+		}
+		
+		optionGroupRepository.save(new OptionGroup(trimmedName));
 	}
 
 	@Override
