@@ -27,60 +27,83 @@ public class OptionGroupRepositoryImpl implements OptionGroupRepository {
     }
 
     @Override
-public List<OptionGroup> findOptionGroupsWithOptionsByMenuId(long menuId) {
-    String sql = """
-        SELECT
-            OG.group_id,
-            OG.group_name,
-            MO.option_id,
-            MO.option_name,
-            MO.extra_price,
-            MO.display_order AS option_order
-        FROM MENU M
-        INNER JOIN MENU_OPTION_GROUP MOG ON M.menu_id = MOG.menu_id
-        INNER JOIN OPTION_GROUP OG ON OG.group_id = MOG.group_id
-        LEFT JOIN MENU_OPTION MO ON MO.group_id = OG.group_id
-        WHERE M.menu_id = ?
-        ORDER BY OG.group_id, MO.display_order
-        """;
+    public List<OptionGroup> findOptionGroupsWithOptionsByMenuId(long menuId) {
+        // 1. 메뉴별 전용 옵션 그룹 조회 시도
+        String menuSql = """
+            SELECT
+                OG.group_id,
+                OG.group_name,
+                MO.option_id,
+                MO.option_name,
+                MO.extra_price,
+                MO.display_order AS option_order
+            FROM MENU_OPTION_GROUP MOG
+            INNER JOIN OPTION_GROUP OG ON OG.group_id = MOG.group_id
+            LEFT JOIN MENU_OPTION MO ON MO.group_id = OG.group_id
+            WHERE MOG.menu_id = ?
+            ORDER BY MOG.display_order, MO.display_order
+            """;
 
-    Map<Long, OptionGroup> grouped = new LinkedHashMap<>();
+        List<OptionGroup> result = fetchGroupsFromSql(menuSql, menuId);
 
-    try (Connection conn = DBUtil.getConnection();
-         PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-        pstmt.setLong(1, menuId);
-
-        try (ResultSet rs = pstmt.executeQuery()) {
-            while (rs.next()) {
-                long groupId = rs.getLong("group_id");
-                String groupName = rs.getString("group_name");
-
-                OptionGroup optionGroup = grouped.computeIfAbsent(groupId, id -> {
-                    OptionGroup g = new OptionGroup(id, groupName);
-                    g.setOptions(new ArrayList<>()); // OptionGroup에 options List 필드 필요
-                    return g;
-                });
-
-                long optionId = rs.getLong("option_id");
-
-                MenuOption option = new MenuOption(
-                    optionId,
-                    optionGroup.getGroupId(),
-                    rs.getString("option_name"),
-                    rs.getInt("extra_price"),
-                    rs.getInt("option_order")
-                );
-
-                optionGroup.addOption(option);;
-            }
+        // 2. 메뉴별 옵션이 없으면 카테고리별 기본 옵션 조회
+        if (result.isEmpty()) {
+            String categorySql = """
+                SELECT
+                    OG.group_id,
+                    OG.group_name,
+                    MO.option_id,
+                    MO.option_name,
+                    MO.extra_price,
+                    MO.display_order AS option_order
+                FROM MENU M
+                INNER JOIN CATEGORY_OPTION_GROUP COG ON M.category_id = COG.category_id
+                INNER JOIN OPTION_GROUP OG ON OG.group_id = COG.group_id
+                LEFT JOIN MENU_OPTION MO ON MO.group_id = OG.group_id
+                WHERE M.menu_id = ?
+                ORDER BY COG.display_order, MO.display_order
+                """;
+            result = fetchGroupsFromSql(categorySql, menuId);
         }
 
-    } catch (SQLException e) {
-        throw new RuntimeException("옵션 그룹 조회 실패", e);
+        return result;
     }
 
-    return new ArrayList<>(grouped.values());
+    private List<OptionGroup> fetchGroupsFromSql(String sql, long idParam) {
+        Map<Long, OptionGroup> grouped = new LinkedHashMap<>();
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setLong(1, idParam);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    long groupId = rs.getLong("group_id");
+                    String groupName = rs.getString("group_name");
+
+                    OptionGroup optionGroup = grouped.computeIfAbsent(groupId, id -> {
+                        OptionGroup g = new OptionGroup(id, groupName);
+                        g.setOptions(new ArrayList<>());
+                        return g;
+                    });
+
+                    long optionId = rs.getLong("option_id");
+                    if (optionId > 0) {
+                        MenuOption option = new MenuOption(
+                            optionId,
+                            groupId,
+                            rs.getString("option_name"),
+                            rs.getInt("extra_price"),
+                            rs.getInt("option_order")
+                        );
+                        optionGroup.addOption(option);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("옵션 그룹 조회 실패", e);
+        }
+        return new ArrayList<>(grouped.values());
     }
 
 
