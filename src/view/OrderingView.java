@@ -177,7 +177,6 @@ public class OrderingView {
 		if (optionGroups == null || optionGroups.isEmpty()) {
 			return selection;
 		}
-		System.out.println("2313213123123");
 		while (true) {
 			EndView.printSelectedOptionGroups(optionGroups, selection);
 			int groupChoice = readInt("옵션 변경할 그룹 번호 (0. 뒤로, 9. 선택 확정): ");
