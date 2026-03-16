@@ -44,11 +44,26 @@ public class MemberRepositoryImpl implements MemberRepository {
 	@Override
 	public List<PointHistory> getPointHistory(long memberId) {
 		List<PointHistory> historyList = new ArrayList<>();
+		
+		// 테이블 자동 생성 로직 (조회 시에도 보장)
+		String checkSql = "CREATE TABLE IF NOT EXISTS POINT_HISTORY (" +
+				"history_id INT AUTO_INCREMENT PRIMARY KEY, " +
+				"member_id BIGINT NOT NULL, " +
+				"amount INT NOT NULL, " +
+				"reason VARCHAR(255) NOT NULL, " +
+				"created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+				"FOREIGN KEY (member_id) REFERENCES MEMBER(member_id) ON DELETE CASCADE)";
+		
 		String sql = "SELECT * FROM POINT_HISTORY WHERE member_id = ? ORDER BY created_at DESC";
 		
 		try (Connection conn = DBUtil.getConnection(); 
+			 Statement stmt = conn.createStatement();
 			 PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			
+			// 1. 테이블 존재 여부 보장
+			stmt.execute(checkSql);
+			
+			// 2. 내역 조회
 			pstmt.setLong(1, memberId);
 			try (ResultSet rs = pstmt.executeQuery()) {
 				while (rs.next()) {
