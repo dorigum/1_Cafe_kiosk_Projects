@@ -76,11 +76,43 @@ public class MemberServiceImpl implements MemberService {
 		if (memberRepository.isPhoneExists(phone)) {
 			throw new ConflictException("이미 가입된 전화번호입니다.");
 		}
-		boolean result = memberRepository.register(new Member(phone, password, age));
+
+		Member newMember = new Member(phone, password, age);
+		boolean result = memberRepository.register(newMember);
+
 		if (!result) {
 			throw new BusinessRuleException("회원가입에 실패했습니다.");
 		}
+
+		// 회원가입 성공 후 보너스 포인트 지급 (예: 1000P)
+		try {
+			// 방금 가입한 회원의 ID를 가져오기 위해 다시 조회
+			Member registered = memberRepository.login(phone, password);
+			if (registered != null) {
+				updatePoint(registered.getMemberId(), 1000, "회원가입 축하 포인트");
+			}
+		} catch (Exception e) {
+			// 포인트 지급 실패가 회원가입 전체 실패로 이어지지는 않게 로그만 남기거나 무시 (필요시 수정)
+			System.err.println("회원가입 보너스 포인트 지급 중 오류: " + e.getMessage());
+		}
+
 		return true;
+	}
+
+	@Override
+	public void updatePoint(long memberId, int amount, String reason) {
+		if (memberId <= 0) {
+			throw new ValidationException("유효하지 않은 회원 ID입니다.");
+		}
+
+		// 1. 포인트 잔액 업데이트
+		boolean updated = memberRepository.updatePoint(memberId, amount);
+		if (!updated) {
+			throw new BusinessRuleException("포인트 업데이트에 실패했습니다.");
+		}
+
+		// 2. 포인트 변동 내역 저장
+		memberRepository.savePointHistory(memberId, amount, reason);
 	}
 
 	@Override

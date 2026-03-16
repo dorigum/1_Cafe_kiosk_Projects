@@ -25,4 +25,13 @@ public interface MemberService {
 
 	List<OrderItem> getQuickOrder(Member member);
 
+	/**
+	 * 포인트 잔액을 업데이트하고 히스토리를 저장합니다.
+	 * 
+	 * @param memberId 회원 ID
+	 * @param amount   변동 금액 (양수: 적립, 음수: 사용)
+	 * @param reason   변동 사유
+	 */
+	void updatePoint(long memberId, int amount, String reason);
+
 }

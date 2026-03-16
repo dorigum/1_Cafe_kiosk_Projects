@@ -38,6 +38,10 @@ public class MemberController {
 		} catch (CafeKioskException e) {
 			FailView.fail(e.getMessage());
 			return null;
+		} catch (Exception e) {
+			// 기타 예상치 못한 오류 발생 시 사용자에게 노출하지 않고 로그만 남김
+			System.err.println("시스템 오류: " + e.getMessage());
+			return null;
 		}
 	}
 
