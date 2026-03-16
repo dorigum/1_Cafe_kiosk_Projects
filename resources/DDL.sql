@@ -26,6 +26,7 @@ CREATE TABLE `MEMBER` (
   `age` int,
   `point_balance` int NOT NULL DEFAULT 0 COMMENT '보유 포인트',
   `role` varchar(10) NOT NULL DEFAULT 'USER' COMMENT 'USER / ADMIN',
+  `preferred_category_id` int DEFAULT 0 COMMENT '선호 카테고리 ID',
   `created_at` datetime NOT NULL DEFAULT (now()) COMMENT '가입일'
 );
 

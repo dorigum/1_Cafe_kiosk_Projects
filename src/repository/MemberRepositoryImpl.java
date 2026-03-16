@@ -90,11 +90,20 @@ public class MemberRepositoryImpl implements MemberRepository {
 			pstmt.setString(2, password);
 			try (ResultSet rs = pstmt.executeQuery()) {
 				if (rs.next()) {
-					Member member = new Member(rs.getLong("member_id"), rs.getString("phone"), rs.getString("password"),
+					long memberId = rs.getLong("member_id");
+					Member member = new Member(memberId, rs.getString("phone"), rs.getString("password"),
 							rs.getInt("age"), rs.getInt("point_balance"), rs.getString("role"),
 							rs.getTimestamp("created_at"));
-					member.setPreferredCategoryId(rs.getInt("preferred_category_id")); // ← 추가
-					return member;
+					
+					// 선호 카테고리 설정 (컬럼이 있을 때만)
+					try {
+						member.setPreferredCategoryId(rs.getInt("preferred_category_id"));
+					} catch (SQLException ignored) {
+					}
+					
+					if (memberId > 0) {
+						return member;
+					}
 				}
 			}
 		} catch (SQLException e) {
