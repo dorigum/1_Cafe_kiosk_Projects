@@ -13,6 +13,10 @@ desktop.ini
 # Logs
 *.log
 
-dbinfo.properties
+dbInfo.properties
+
+# Sales Reports
+resources/cafe_sales_report/
 
 .vscode
+.claude

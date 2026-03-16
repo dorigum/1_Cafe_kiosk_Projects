@@ -88,8 +88,10 @@ public class MenuView {
 			System.out.println("2. 찜 목록 보기");
 			System.out.println("3. 퀵오더 (최근 주문 바로 주문)");
 			System.out.println("4. 주문하기 (메뉴판 보기)");
-			System.out.println("5. 추천 메뉴 보기"); // ← 추가
-			System.out.println("6. 선호 카테고리 변경"); // ← 추가
+			// <<<<<<< HEAD 부터 >>>>>>> origin/develop 지우고 교체
+			System.out.println("5. 추천 메뉴 보기");
+			System.out.println("6. 선호 카테고리 변경");
+			System.out.println("7. 포인트 적립 내역 확인");
 			System.out.println("0. 로그아웃");
 			int sub = readInt("선택: ");
 
@@ -134,6 +136,8 @@ public class MenuView {
 					categoryId = 0;
 				}
 				memberController.updatePreferredCategory(member, categoryId);
+			} else if (sub == 7) {
+				memberController.showPointHistory(member);
 			} else if (sub == 0) {
 				EndView.success("로그아웃 되었습니다.");
 				break;
@@ -419,7 +423,7 @@ public class MenuView {
 		while (true) {
 			System.out.println("\n--- [회원 관리] ---");
 			adminController.listMembers();
-			System.out.println("\n1. 삭제 | 0. 뒤로");
+			System.out.println("\n1. 삭제 | 2. 포인트 수정 | 3. 등급 변경 | 0. 뒤로");
 			int sub = readInt("선택: ");
 
 			if (sub == 1) {
@@ -427,6 +431,34 @@ public class MenuView {
 				if (memberId == 0)
 					continue;
 				adminController.deleteMember(memberId);
+			} else if (sub == 2) {
+				long memberId = readLong("포인트를 수정할 회원 ID (취소: 0): ");
+				if (memberId == 0)
+					continue;
+
+				Member member = adminController.getMemberById(memberId);
+				if (member == null) {
+					FailView.fail("존재하지 않는 회원입니다.");
+					continue;
+				}
+
+				if ("ADMIN".equalsIgnoreCase(member.getRole())) {
+					FailView.fail("관리자 등급의 회원은 포인트를 수정할 수 없습니다.");
+					continue;
+				}
+
+				System.out.println("지급할 금액은 양수(+), 차감할 금액은 음수(-)로 입력하세요.");
+				int amount = readInt("수정할 포인트 금액: ");
+				String reason = readText("변경 사유 (예: 이벤트 적립): ");
+				adminController.updateMemberPoint(memberId, amount, reason);
+			} else if (sub == 3) {
+				long memberId = readLong("등급을 변경할 회원 ID (취소: 0): ");
+				if (memberId == 0)
+					continue;
+
+				System.out.println("변경할 등급을 입력하세요 (ADMIN / USER)");
+				String newRole = readText("새 등급: ");
+				adminController.updateMemberRole(memberId, newRole);
 			} else if (sub == 0) {
 				break;
 			} else {
@@ -460,12 +492,14 @@ public class MenuView {
 			System.out.println("2. 카테고리별 매출 분석 (비율)");
 			System.out.println("3. 메뉴별 판매 순위 (Top 3)");
 			System.out.println("4. 기간별 상세 조회 (객단가 분석)");
-			System.out.println("5. 시간대별 매출 분석 (피크타임)");
+			System.out.println("5. 피크타임 통합 분석 (시간+요일)");
 			System.out.println("6. 우수 회원 기여도 분석 (VVIP)");
+			System.out.println("7. 전체 매출 통계 CSV로 내보내기");
 			System.out.println("0. 뒤로");
 			int choice = readInt("선택: ");
 
 			switch (choice) {
+
 			case 1:
 				runDateStatistics(adminController);
 				break;
@@ -479,15 +513,19 @@ public class MenuView {
 				runDetailedPeriodStatistics(adminController);
 				break;
 			case 5:
-				adminController.showHourlySalesStatistics();
+				adminController.showIntegratedPeakTimeStatistics();
 				break;
 			case 6:
 				adminController.showTopMemberStatistics(5);
+				break;
+			case 7:
+				adminController.exportStatistics();
 				break;
 			case 0:
 				return;
 			default:
 				FailView.fail("잘못된 선택입니다.");
+
 			}
 		}
 	}

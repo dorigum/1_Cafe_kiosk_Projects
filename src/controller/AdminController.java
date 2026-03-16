@@ -115,10 +115,39 @@ public class AdminController {
         }
     }
 
+    public Member getMemberById(long id) {
+        try {
+            List<Member> members = adminService.getMemberList();
+            return members.stream().filter(m -> m.getMemberId() == id).findFirst().orElse(null);
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+            return null;
+        }
+    }
+
     public void deleteMember(long id) {
         try {
             adminService.deleteMember(id);
             EndView.success("회원을 삭제했습니다.");
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+        }
+    }
+
+    public void updateMemberRole(long id, String newRole) {
+        try {
+            adminService.updateMemberRole(id, newRole);
+            EndView.success("회원 등급이 변경되었습니다.");
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+        }
+    }
+
+    public void updateMemberPoint(long id, int amount, String reason) {
+        try {
+            adminService.updateMemberPoint(id, amount, reason);
+            String sign = amount > 0 ? "+" : "";
+            EndView.success(String.format("회원 포인트가 수정되었습니다. (%s%d원)\n사유: %s", sign, amount, reason));
         } catch (CafeKioskException e) {
             FailView.fail(e.getMessage());
         }
@@ -266,10 +295,40 @@ public class AdminController {
         }
     }
 
+    public void showDayOfWeekStatistics() {
+        try {
+            Map<String, Integer> daySales = adminService.getDayOfWeekSales();
+            EndView.printDayOfWeekSalesReport(daySales);
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+        }
+    }
+
+    public void showIntegratedPeakTimeStatistics() {
+        try {
+            System.out.println("\n[📊 통합 피크타임 매출 분석 리포트]");
+            Map<Integer, Integer> hourlySales = adminService.getHourlySales();
+            Map<String, Integer> daySales = adminService.getDayOfWeekSales();
+            
+            EndView.printHourlySalesReport(hourlySales);
+            EndView.printDayOfWeekSalesReport(daySales);
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+        }
+    }
+
     public void showTopMemberStatistics(int limit) {
         try {
             List<Map<String, Object>> topMembers = adminService.getTopSpenders(limit);
             EndView.printTopMemberReport(topMembers);
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+        }
+    }
+
+    public void exportStatistics() {
+        try {
+            adminService.exportStatisticsToCSV();
         } catch (CafeKioskException e) {
             FailView.fail(e.getMessage());
         }

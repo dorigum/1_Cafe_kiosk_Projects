@@ -8,6 +8,7 @@ import model.OptionGroup;
 import model.OptionSelection;
 import model.Order;
 import model.OrderItem;
+import model.PointHistory;
 import model.Wishlist;
 
 import java.util.ArrayList;
@@ -35,7 +36,39 @@ public final class EndView {
 	}
 
 	public static void printOrders(List<Order> orders) {
-		printList("[주문 목록]", orders, "주문 내역이 없습니다.");
+		System.out.println("\n===== [전체 주문 관리 목록] =====");
+		if (orders == null || orders.isEmpty()) {
+			System.out.println("주문 내역이 없습니다.");
+			return;
+		}
+
+		for (Order order : orders) {
+			String statusIcon = "COMPLETED".equalsIgnoreCase(order.getStatus()) ? "[V]" : "[X]";
+			String statusText = "COMPLETED".equalsIgnoreCase(order.getStatus()) ? "[COMPLETED]" : "[CANCELLED]";
+			String memberInfo = order.getMemberPhone() != null ? order.getMemberPhone() : "비회원";
+
+			// 헤더 정보 (상태, ID, 주문자, 총액, 시간)
+			System.out.printf("%s %-11s | 주문ID: %3d | 주문자: %-13s | 총액: %,7d원\n", statusIcon, statusText,
+					order.getOrderId(), memberInfo, order.getTotalAmount());
+			System.out.printf("   주문 시간: %s\n", order.getOrderDate());
+
+			// 상세 메뉴 정보
+			if (order.getItems() != null && !order.getItems().isEmpty()) {
+				for (OrderItem item : order.getItems()) {
+					System.out.printf("   └─ %-15s %d개 (단가: %,d원)\n", item.getMenuNameSnapshot(), item.getQuantity(),
+							item.getUnitPrice());
+
+					// 선택된 세부 옵션 정보 출력
+					List<MenuOption> options = item.getOptions();
+					if (options != null && !options.isEmpty()) {
+						String optionStr = options.stream().map(MenuOption::getOptionName)
+								.collect(java.util.stream.Collectors.joining(", "));
+						System.out.printf("      [선택 옵션: %s]\n", optionStr);
+					}
+				}
+			}
+			System.out.println("-".repeat(85));
+		}
 	}
 
 	public static void printWishlist(Member member, List<Wishlist> wishlists) {
@@ -54,6 +87,17 @@ public final class EndView {
 			return;
 		}
 		orders.forEach(System.out::println);
+	}
+
+	public static void printPointHistory(Member member, List<PointHistory> history) {
+		System.out.println("\n===== [" + member.getPhone() + "] 님의 포인트 변동 내역 =====");
+		if (history == null || history.isEmpty()) {
+			System.out.println("포인트 변동 내역이 없습니다.");
+		} else {
+			history.forEach(h -> System.out.println("  " + h.toString()));
+		}
+		System.out.println("-------------------------------------------");
+		System.out.printf("▶ 현재 보유 포인트: %,d원\n", member.getPointBalance());
 	}
 
 	public static void printQuickOrder(Member member, Order order) {
@@ -181,6 +225,23 @@ public final class EndView {
 		System.out.println("=".repeat(40));
 	}
 
+	public static void printDayOfWeekSalesReport(Map<String, Integer> daySales) {
+		System.out.println("\n" + "=".repeat(40));
+		System.out.println("      📅 [요일별 매출 분석]      ");
+		System.out.println("=".repeat(40));
+		if (daySales == null || daySales.isEmpty()) {
+			System.out.println("  - 데이터 없음");
+		} else {
+			int maxSales = daySales.values().stream().mapToInt(Integer::intValue).max().orElse(1);
+			daySales.forEach((day, sales) -> {
+				int barLength = (sales * 25 / maxSales);
+				String bar = "■".repeat(barLength);
+				System.out.printf(" %-4s | %-25s (%,d원)\n", day, bar, sales);
+			});
+		}
+		System.out.println("=".repeat(40));
+	}
+
 	public static void printTopMemberReport(List<Map<String, Object>> topMembers) {
 		System.out.println("\n" + "=".repeat(40));
 		System.out.println("      💎 [우수 회원 기여도 분석]      ");
@@ -235,6 +296,43 @@ public final class EndView {
 		System.out.println(" 0. 뒤로");
 		System.out.println(" 8. 카트확인");
 		System.out.println(" 9. 주문하기");
+	}
+
+	public static void printOrderMenu(List<Menu> menus) {
+		System.out.println("\n===== 메뉴 목록 =====");
+		if (menus == null || menus.isEmpty()) {
+			System.out.println("표시할 메뉴가 없습니다.");
+			return;
+		}
+
+		for (int i = 0; i < menus.size(); i++) {
+			Menu menu = menus.get(i);
+			String category = menu.getCategoryName() == null ? "" : "[" + menu.getCategoryName() + "] ";
+			System.out.printf(" %d. %s%-20s | %,d원%n", i + 1, category, menu.getMenuName(), menu.getPrice());
+
+			List<OptionGroup> groups = menu.getOptionGroups();
+			if (groups != null && !groups.isEmpty()) {
+				String options = groups.stream().map(OptionGroup::getGroupName)
+						.collect(java.util.stream.Collectors.joining(", "));
+				System.out.println("    선택 가능한 옵션: " + options);
+			}
+
+			if (menu.getDescription() != null && !menu.getDescription().trim().isEmpty()) {
+				System.out.printf("    - %s%n", menu.getDescription());
+			}
+		}
+		System.out.println(" 0. 뒤로");
+		System.out.println(" 8. 카트확인");
+		System.out.println(" 9. 주문하기");
+	}
+
+	public static void printCartManagementMenu() {
+		System.out.println("\n===== 장바구니 관리 =====");
+		System.out.println("1. 상품 삭제");
+		System.out.println("2. 수량 변경");
+		System.out.println("3. 장바구니 비우기");
+		System.out.println("9. 주문하기");
+		System.out.println("0. 뒤로");
 	}
 
 	public static void printCart(List<OrderItem> cart) {

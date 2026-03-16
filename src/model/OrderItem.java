@@ -85,6 +85,10 @@ public class OrderItem {
 		return options;
 	}
 
+	public void setOptions(List<MenuOption> options) {
+		this.options = options;
+	}
+
 	public int getPointUsed() {
 		return pointUsed;
 	}
@@ -95,11 +99,6 @@ public class OrderItem {
 
 	public Timestamp getOrderDate() {
 		return orderDate;
-	}
-
-	// 아래 추가!
-	public void setOptions(List<MenuOption> options) {
-		this.options = options;
 	}
 
 	@Override

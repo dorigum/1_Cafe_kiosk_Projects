@@ -47,6 +47,10 @@ public interface AdminService {
 
     void deleteMember(long id);
 
+    void updateMemberRole(long id, String newRole);
+
+    void updateMemberPoint(long id, int amount, String reason);
+
     // 주문 관리
     List<Order> getOrderList();
 
@@ -66,5 +70,8 @@ public interface AdminService {
     // 260313 [feat]: 매출 통계 고도화 신규 메서드
     Map<String, Object> getSalesStatsByPeriod(String startDate, String endDate);
     Map<Integer, Integer> getHourlySales();
+    Map<String, Integer> getDayOfWeekSales();
     List<Map<String, Object>> getTopSpenders(int limit);
+
+    void exportStatisticsToCSV();
 }

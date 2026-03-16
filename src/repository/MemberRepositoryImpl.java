@@ -4,11 +4,60 @@ import exception.RepositoryException;
 import model.Member;
 import model.Order;
 import model.OrderItem;
+import model.PointHistory;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MemberRepositoryImpl implements MemberRepository {
+
+	@Override
+	public void savePointHistory(long memberId, int amount, String reason) {
+		String checkSql = "CREATE TABLE IF NOT EXISTS POINT_HISTORY (" + "history_id INT AUTO_INCREMENT PRIMARY KEY, "
+				+ "member_id BIGINT NOT NULL, " + "amount INT NOT NULL, " + "reason VARCHAR(255) NOT NULL, "
+				+ "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
+				+ "FOREIGN KEY (member_id) REFERENCES MEMBER(member_id) ON DELETE CASCADE)";
+
+		String insertSql = "INSERT INTO POINT_HISTORY (member_id, amount, reason) VALUES (?, ?, ?)";
+
+		try (Connection conn = DBUtil.getConnection();
+				Statement stmt = conn.createStatement();
+				PreparedStatement pstmt = conn.prepareStatement(insertSql)) {
+
+			// 1. 테이블 존재 여부 보장 (안정성)
+			stmt.execute(checkSql);
+
+			// 2. 히스토리 저장
+			pstmt.setLong(1, memberId);
+			pstmt.setInt(2, amount);
+			pstmt.setString(3, reason);
+			pstmt.executeUpdate();
+
+		} catch (SQLException e) {
+			throw new RepositoryException("포인트 내역 저장 중 오류가 발생했습니다.", e);
+		}
+	}
+
+	@Override
+	public List<PointHistory> getPointHistory(long memberId) {
+		List<PointHistory> historyList = new ArrayList<>();
+		String sql = "SELECT * FROM POINT_HISTORY WHERE member_id = ? ORDER BY created_at DESC";
+
+		try (Connection conn = DBUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+			pstmt.setLong(1, memberId);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					historyList.add(new PointHistory(rs.getInt("history_id"), rs.getLong("member_id"),
+							rs.getInt("amount"), rs.getString("reason"), rs.getTimestamp("created_at")));
+				}
+			}
+			return historyList;
+		} catch (SQLException e) {
+			// 테이블이 아직 없는 경우 빈 목록 반환
+			return historyList;
+		}
+	}
 
 	// 로그인 - phone으로
 	public Member login(String phone, String password) {
@@ -99,7 +148,27 @@ public class MemberRepositoryImpl implements MemberRepository {
 		}
 	}
 
+	// 회원 ID로 조회
+	@Override
+	public Member getMemberById(long memberId) {
+		String sql = "SELECT * FROM MEMBER WHERE member_id = ?";
+		try (Connection conn = DBUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setLong(1, memberId);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					return new Member(rs.getLong("member_id"), rs.getString("phone"), rs.getString("password"),
+							rs.getInt("age"), rs.getInt("point_balance"), rs.getString("role"),
+							rs.getTimestamp("created_at"));
+				}
+			}
+		} catch (SQLException e) {
+			throw new RepositoryException("회원 조회 중 오류가 발생했습니다.", e);
+		}
+		return null;
+	}
+
 	// 전체 회원 조회
+	@Override
 	public List<Member> getAllMembers() {
 		List<Member> members = new ArrayList<>();
 		String sql = "SELECT * FROM MEMBER ORDER BY member_id DESC";
@@ -138,6 +207,31 @@ public class MemberRepositoryImpl implements MemberRepository {
 			pstmt.executeUpdate();
 		} catch (SQLException e) {
 			throw new RepositoryException("선호 카테고리 수정 중 오류가 발생했습니다.", e);
+		}
+	}
+
+	// 포인트 수정 (증감)
+	@Override
+	public boolean updatePoint(long memberId, int amount) {
+		String sql = "UPDATE MEMBER SET point_balance = point_balance + ? WHERE member_id = ?";
+		try (Connection conn = DBUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, amount);
+			pstmt.setLong(2, memberId);
+			return pstmt.executeUpdate() > 0;
+		} catch (SQLException e) {
+			throw new RepositoryException("포인트 수정 중 오류가 발생했습니다.", e);
+		}
+	}
+
+	@Override
+	public boolean updateRole(long memberId, String newRole) {
+		String sql = "UPDATE MEMBER SET role = ? WHERE member_id = ?";
+		try (Connection conn = DBUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setString(1, newRole.toUpperCase());
+			pstmt.setLong(2, memberId);
+			return pstmt.executeUpdate() > 0;
+		} catch (SQLException e) {
+			throw new RepositoryException("등급 변경 중 오류가 발생했습니다.", e);
 		}
 	}
 }

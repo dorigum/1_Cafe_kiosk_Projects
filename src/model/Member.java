@@ -54,6 +54,10 @@ public class Member {
 		return pointBalance;
 	}
 
+	public void setPointBalance(int pointBalance) {
+		this.pointBalance = pointBalance;
+	}
+
 	public String getRole() {
 		return role;
 	}

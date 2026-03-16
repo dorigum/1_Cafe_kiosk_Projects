@@ -7,6 +7,7 @@ import exception.ValidationException;
 import model.Member;
 import model.Order;
 import model.OrderItem;
+import model.PointHistory;
 import service.MemberService;
 import view.EndView;
 import view.FailView;
@@ -40,16 +41,29 @@ public class MemberController {
 		} catch (CafeKioskException e) {
 			FailView.fail(e.getMessage());
 			return null;
+		} catch (Exception e) {
+			// 기타 예상치 못한 오류 발생 시 사용자에게 노출하지 않고 로그만 남김
+			System.err.println("시스템 오류: " + e.getMessage());
+			return null;
 		}
 	}
 
 	public void showOrderHistory(Member member) {
-		try {
-			List<Order> orders = memberService.getOrderHistory(member);
-			EndView.printOrderHistory(member, orders);
-		} catch (CafeKioskException e) {
-			FailView.fail(e.getMessage());
-		}
+	    try {
+	        List<Order> orders = memberService.getOrderHistory(member);
+	        EndView.printOrders(orders);
+	    } catch (CafeKioskException e) {
+	        FailView.fail(e.getMessage());
+	    }
+	}
+
+	public void showPointHistory(Member member) {
+	    try {
+	        List<PointHistory> history = memberService.getPointHistory(member);
+	        EndView.printPointHistory(member, history);
+	    } catch (CafeKioskException e) {
+	        FailView.fail(e.getMessage());
+	    }
 	}
 
 	public void showWishlist(Member member) {
