@@ -204,7 +204,7 @@ public class OrderingView {
         }
 
         EndView.printCart(cart);
-        int totalAmount = calculateCartTotal(cart);
+        int totalAmount = orderItemService.calculateCartTotal(cart);
         int pointUsed = readPointUsage(member, totalAmount);
         int finalAmount = totalAmount - pointUsed;
 
@@ -217,7 +217,6 @@ public class OrderingView {
         if (orderChoice == PLACE_ORDER) {
             int result = menuController.order(cart, member, pointUsed);
             if (result == 1) {
-                updateMemberPointBalance(member, totalAmount, pointUsed);
                 EndView.success("주문이 완료되었습니다.");
                 cart.clear();
                 return true;
@@ -225,14 +224,6 @@ public class OrderingView {
             FailView.fail("주문에 실패했습니다.");
         }
         return false;
-    }
-
-    private int calculateCartTotal(List<OrderItem> cart) {
-        int totalAmount = 0;
-        for (OrderItem orderItem : cart) {
-            totalAmount += orderItem.getUnitPrice() * orderItem.getQuantity();
-        }
-        return totalAmount;
     }
 
     private int readPointUsage(Member member, int totalAmount) {
@@ -258,15 +249,6 @@ public class OrderingView {
             }
             return pointUsed;
         }
-    }
-
-    private void updateMemberPointBalance(Member member, int totalAmount, int pointUsed) {
-        if (member == null) {
-            return;
-        }
-
-        int pointEarned = Math.max(0, (totalAmount - pointUsed) / 10);
-        member.setPointBalance(member.getPointBalance() - pointUsed + pointEarned);
     }
 
     private List<Menu> loadMenus(MenuController menuController, int categoryChoice) {
