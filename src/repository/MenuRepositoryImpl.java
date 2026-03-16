@@ -2,6 +2,7 @@ package repository;
 
 import exception.RepositoryException;
 import model.Menu;
+import model.MenuOption;
 import model.OptionGroup;
 
 import java.sql.Connection;
@@ -161,6 +162,7 @@ public class MenuRepositoryImpl implements MenuRepository {
 	private List<OptionGroup> fetchOptionGroups(Connection conn, long menuId, int categoryId) {
 		List<OptionGroup> groups = new ArrayList<>();
 
+		// 1. 메뉴별 전용 옵션 그룹 조회 시도
 		String menuSql = "SELECT og.group_id, og.group_name " + "FROM MENU_OPTION_GROUP mog "
 				+ "JOIN OPTION_GROUP og ON mog.group_id = og.group_id " + "WHERE mog.menu_id = ? "
 				+ "ORDER BY mog.display_order";
@@ -175,6 +177,7 @@ public class MenuRepositoryImpl implements MenuRepository {
 		} catch (SQLException ignored) {
 		}
 
+		// 2. 메뉴별 옵션이 없으면 카테고리별 기본 옵션 조회
 		if (groups.isEmpty()) {
 			String categorySql = "SELECT og.group_id, og.group_name " + "FROM CATEGORY_OPTION_GROUP cog "
 					+ "JOIN OPTION_GROUP og ON cog.group_id = og.group_id " + "WHERE cog.category_id = ? "
@@ -185,6 +188,23 @@ public class MenuRepositoryImpl implements MenuRepository {
 					while (rs.next()) {
 						groups.add(new OptionGroup(rs.getLong("group_id"), rs.getString("group_name")));
 					}
+				}
+			} catch (SQLException ignored) {
+			}
+		}
+
+		// 3. 각 옵션 그룹에 속한 세부 옵션(MenuOption)들을 채워넣음
+		for (OptionGroup group : groups) {
+			String optionSql = "SELECT * FROM MENU_OPTION WHERE group_id = ? ORDER BY display_order";
+			try (PreparedStatement pstmt = conn.prepareStatement(optionSql)) {
+				pstmt.setLong(1, group.getGroupId());
+				try (ResultSet rs = pstmt.executeQuery()) {
+					List<MenuOption> options = new ArrayList<>();
+					while (rs.next()) {
+						options.add(new MenuOption(rs.getLong("option_id"), rs.getLong("group_id"),
+								rs.getString("option_name"), rs.getInt("extra_price"), rs.getInt("display_order")));
+					}
+					group.setOptions(options);
 				}
 			} catch (SQLException ignored) {
 			}
