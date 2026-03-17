@@ -56,30 +56,19 @@ public class AdminServiceImpl implements AdminService {
 			throw new BusinessRuleException("메뉴 등록에 실패했습니다.");
 		}
 
-		// 2. [지능형 옵션 매핑] '프라푸치노' 또는 '라떼' 키워드 검사
-		if (trimmedName.contains("프라푸치노") || trimmedName.contains("라떼")) {
-			List<OptionGroup> allGroups = optionGroupRepository.findAll();
-			
-			// '휘핑유무' 및 '사이즈' 옵션 그룹 찾기
-			OptionGroup whippingGroup = allGroups.stream().filter(g -> g.getGroupName().contains("휘핑")).findFirst().orElse(null);
-			OptionGroup sizeGroup = allGroups.stream().filter(g -> g.getGroupName().contains("사이즈")).findFirst().orElse(null);
+		// 2. [템플릿 방식] 카테고리에 설정된 기본 옵션 그룹들을 메뉴에 자동 매핑
+		// 방금 등록된 메뉴의 ID 조회 (가장 최근 등록된 동일 이름의 메뉴)
+		List<Menu> allMenus = menuRepository.getAllMenus();
+		Menu registeredMenu = allMenus.stream()
+				.filter(m -> m.getMenuName().equals(trimmedName))
+				.sorted((m1, m2) -> Long.compare(m2.getMenuId(), m1.getMenuId()))
+				.findFirst()
+				.orElse(null);
 
-			if (whippingGroup != null || sizeGroup != null) {
-				// 방금 등록된 메뉴의 ID 조회
-				List<Menu> menus = menuRepository.getAllMenus();
-				Menu registeredMenu = menus.stream().filter(m -> m.getMenuName().equals(trimmedName))
-						.sorted((m1, m2) -> Long.compare(m2.getMenuId(), m1.getMenuId())).findFirst().orElse(null);
-
-				if (registeredMenu != null) {
-					// 사이즈 옵션 먼저 추가 (표시 순서 고려)
-					if (sizeGroup != null) {
-						menuRepository.addOptionGroupToMenu(registeredMenu.getMenuId(), sizeGroup.getGroupId(), 1);
-					}
-					// 휘핑 옵션 추가
-					if (whippingGroup != null) {
-						menuRepository.addOptionGroupToMenu(registeredMenu.getMenuId(), whippingGroup.getGroupId(), 2);
-					}
-				}
+		if (registeredMenu != null && category.getOptionGroups() != null) {
+			int order = 1;
+			for (OptionGroup og : category.getOptionGroups()) {
+				menuRepository.addOptionGroupToMenu(registeredMenu.getMenuId(), og.getGroupId(), order++);
 			}
 		}
 	}
@@ -132,6 +121,14 @@ public class AdminServiceImpl implements AdminService {
 		menuRepository.addOptionGroupToMenu(menuId, groupId, displayOrder);
 	}
 
+	@Override
+	public void removeOptionGroupFromMenu(long menuId, long groupId) {
+		Menu menu = menuRepository.findById(menuId);
+		if (menu == null) throw new NotFoundException("메뉴를 찾을 수 없습니다.");
+		
+		menuRepository.removeOptionGroupFromMenu(menuId, groupId);
+	}
+
 	// --- 카테고리 관리 ---
 	public void addCategory(String name) {
 		if (name == null || name.trim().isEmpty()) {
@@ -168,7 +165,18 @@ public class AdminServiceImpl implements AdminService {
 		if (name == null || name.trim().isEmpty()) {
 			throw new ValidationException("옵션 그룹명은 비어 있을 수 없습니다.");
 		}
-		optionGroupRepository.save(new OptionGroup(name.trim()));
+		
+		String trimmedName = name.trim();
+		// 중복 체크 로직 추가
+		List<OptionGroup> existingGroups = optionGroupRepository.findAll();
+		boolean isDuplicate = existingGroups.stream()
+				.anyMatch(g -> g.getGroupName().equalsIgnoreCase(trimmedName));
+		
+		if (isDuplicate) {
+			throw new BusinessRuleException("이미 존재하는 옵션 그룹명입니다: " + trimmedName);
+		}
+		
+		optionGroupRepository.save(new OptionGroup(trimmedName));
 	}
 
 	@Override
@@ -293,11 +301,11 @@ public class AdminServiceImpl implements AdminService {
 	}
 
 	// --- 통계 기능 ---
-	public int getTotalSales() {
+	public long getTotalSales() {
 		return orderRepository.getTotalSales();
 	}
 
-	public Map<String, Integer> getSalesByCategory() {
+	public Map<String, Long> getSalesByCategory() {
 		return orderRepository.getSalesByCategory();
 	}
 
@@ -305,11 +313,11 @@ public class AdminServiceImpl implements AdminService {
 		return orderRepository.getTopSellingMenus();
 	}
 
-	public Map<String, Integer> getDailySales() {
+	public Map<String, Long> getDailySales() {
 		return orderRepository.getDailySales();
 	}
 
-	public Map<String, Integer> getSalesByPeriod(String format) {
+	public Map<String, Long> getSalesByPeriod(String format) {
 		return orderRepository.getSalesByPeriod(format);
 	}
 
@@ -319,14 +327,14 @@ public class AdminServiceImpl implements AdminService {
 	}
 
 	@Override
-	public Map<Integer, Integer> getHourlySales() {
+	public Map<Integer, Long> getHourlySales() {
 		return orderRepository.getHourlySales();
 	}
 
 	@Override
-	public Map<String, Integer> getDayOfWeekSales() {
-		Map<String, Integer> rawStats = orderRepository.getDayOfWeekSales();
-		Map<String, Integer> koreanStats = new LinkedHashMap<>();
+	public Map<String, Long> getDayOfWeekSales() {
+		Map<String, Long> rawStats = orderRepository.getDayOfWeekSales();
+		Map<String, Long> koreanStats = new LinkedHashMap<>();
 		
 		// 영문 요일을 한글 요일로 매핑하여 정렬된 순서로 저장
 		String[][] mapping = {
@@ -335,7 +343,7 @@ public class AdminServiceImpl implements AdminService {
 		};
 
 		for (String[] pair : mapping) {
-			koreanStats.put(pair[1], rawStats.getOrDefault(pair[0], 0));
+			koreanStats.put(pair[1], rawStats.getOrDefault(pair[0], 0L));
 		}
 		return koreanStats;
 	}

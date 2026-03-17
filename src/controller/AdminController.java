@@ -108,12 +108,17 @@ public class AdminController {
 
     public void addOptionGroupToMenu(long menuId, long groupId, int displayOrder) {
         try {
-            // AdminService에 해당 메서드가 이미 있다고 가정 (기존에 메뉴 등록 시 사용됨)
-            // 확인 결과 AdminService 인터페이스에는 없으므로 추가 필요할 수 있음
-            // 하지만 AdminServiceImpl에서는 menuRepository.addOptionGroupToMenu를 직접 호출할 수 있으므로
-            // 여기서는 편의상 repository를 직접 사용하거나 service에 위임하는 메서드를 추가합니다.
             adminService.addOptionGroupToMenu(menuId, groupId, displayOrder);
             EndView.success("메뉴에 옵션 그룹이 성공적으로 연결되었습니다.");
+        } catch (CafeKioskException e) {
+            FailView.fail(e.getMessage());
+        }
+    }
+
+    public void removeOptionGroupFromMenu(long menuId, long groupId) {
+        try {
+            adminService.removeOptionGroupFromMenu(menuId, groupId);
+            EndView.success("메뉴에서 옵션 그룹 연결이 성공적으로 해제되었습니다.");
         } catch (CafeKioskException e) {
             FailView.fail(e.getMessage());
         }
@@ -259,8 +264,8 @@ public class AdminController {
 
     public void showDateStatistics(String periodTitle, String format) {
         try {
-            int totalSales = adminService.getTotalSales();
-            Map<String, Integer> periodSales = adminService.getSalesByPeriod(format);
+            long totalSales = adminService.getTotalSales();
+            Map<String, Long> periodSales = adminService.getSalesByPeriod(format);
 
             if ("%Y-%u주".equals(format)) {
                 periodSales = formatWeekData(periodSales);
@@ -274,7 +279,7 @@ public class AdminController {
 
     public void showCategoryStatistics() {
         try {
-            Map<String, Integer> categorySales = adminService.getSalesByCategory();
+            Map<String, Long> categorySales = adminService.getSalesByCategory();
             EndView.printCategorySalesReport(categorySales);
         } catch (CafeKioskException e) {
             FailView.fail(e.getMessage());
@@ -301,7 +306,7 @@ public class AdminController {
 
     public void showHourlySalesStatistics() {
         try {
-            Map<Integer, Integer> hourlySales = adminService.getHourlySales();
+            Map<Integer, Long> hourlySales = adminService.getHourlySales();
             EndView.printHourlySalesReport(hourlySales);
         } catch (CafeKioskException e) {
             FailView.fail(e.getMessage());
@@ -310,7 +315,7 @@ public class AdminController {
 
     public void showDayOfWeekStatistics() {
         try {
-            Map<String, Integer> daySales = adminService.getDayOfWeekSales();
+            Map<String, Long> daySales = adminService.getDayOfWeekSales();
             EndView.printDayOfWeekSalesReport(daySales);
         } catch (CafeKioskException e) {
             FailView.fail(e.getMessage());
@@ -320,8 +325,8 @@ public class AdminController {
     public void showIntegratedPeakTimeStatistics() {
         try {
             System.out.println("\n[📊 통합 피크타임 매출 분석 리포트]");
-            Map<Integer, Integer> hourlySales = adminService.getHourlySales();
-            Map<String, Integer> daySales = adminService.getDayOfWeekSales();
+            Map<Integer, Long> hourlySales = adminService.getHourlySales();
+            Map<String, Long> daySales = adminService.getDayOfWeekSales();
             
             EndView.printHourlySalesReport(hourlySales);
             EndView.printDayOfWeekSalesReport(daySales);
@@ -347,9 +352,9 @@ public class AdminController {
         }
     }
 
-    private Map<String, Integer> formatWeekData(Map<String, Integer> periodSales) {
-        Map<String, Integer> formattedSales = new java.util.LinkedHashMap<>();
-        for (Map.Entry<String, Integer> entry : periodSales.entrySet()) {
+    private Map<String, Long> formatWeekData(Map<String, Long> periodSales) {
+        Map<String, Long> formattedSales = new java.util.LinkedHashMap<>();
+        for (Map.Entry<String, Long> entry : periodSales.entrySet()) {
             String key = entry.getKey();
             try {
                 String[] parts = key.replace("주", "").split("-");

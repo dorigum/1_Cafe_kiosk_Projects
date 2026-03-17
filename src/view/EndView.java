@@ -32,11 +32,30 @@ public final class EndView {
 	}
 
 	public static void printMembers(List<Member> members) {
-		printList("[회원 목록]", members, "회원 정보가 없습니다.");
+		System.out.println("\n===== [전체 회원 정보 관리] =====");
+		if (members == null || members.isEmpty()) {
+			System.out.println("등록된 회원 정보가 없습니다.");
+			return;
+		}
+
+		System.out.printf("%-6s | %-13s | %-10s | %-7s | %-10s\n", "ID", "전화번호", "보유 포인트", "등급", "가입일자");
+		System.out.println("-".repeat(65));
+
+		java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+		for (Member member : members) {
+			String dateStr = (member.getCreatedAt() != null) ? sdf.format(member.getCreatedAt()) : "N/A";
+			System.out.printf("%-6d | %-13s | %,10d원 | %-7s | %-10s\n", 
+					member.getMemberId(), 
+					member.getPhone(), 
+					member.getPointBalance(), 
+					member.getRole(), 
+					dateStr);
+		}
+		System.out.println("-".repeat(65));
 	}
 
 	public static void printOrders(List<Order> orders) {
-		System.out.println("\n===== [전체 주문 관리 목록] =====");
+		System.out.println("\n===== [전체 주문 관리 및 상세 내역] =====");
 		if (orders == null || orders.isEmpty()) {
 			System.out.println("주문 내역이 없습니다.");
 			return;
@@ -44,30 +63,31 @@ public final class EndView {
 
 		for (Order order : orders) {
 			String statusIcon = "COMPLETED".equalsIgnoreCase(order.getStatus()) ? "[V]" : "[X]";
-			String statusText = "COMPLETED".equalsIgnoreCase(order.getStatus()) ? "[COMPLETED]" : "[CANCELLED]";
+			String statusText = "COMPLETED".equalsIgnoreCase(order.getStatus()) ? "[정상결제]" : "[취소완료]";
 			String memberInfo = order.getMemberPhone() != null ? order.getMemberPhone() : "비회원";
 
 			// 헤더 정보 (상태, ID, 주문자, 총액, 시간)
-			System.out.printf("%s %-11s | 주문ID: %3d | 주문자: %-13s | 총액: %,7d원\n", statusIcon, statusText,
-					order.getOrderId(), memberInfo, order.getTotalAmount());
+			System.out.printf("%s %-8s | 주문ID: %3d | 주문자: %-13s | 총액: %,7d원\n", 
+					statusIcon, statusText, order.getOrderId(), memberInfo, order.getTotalAmount());
 			System.out.printf("   주문 시간: %s\n", order.getOrderDate());
 
 			// 상세 메뉴 정보
 			if (order.getItems() != null && !order.getItems().isEmpty()) {
 				for (OrderItem item : order.getItems()) {
-					System.out.printf("   └─ %-15s %d개 (단가: %,d원)\n", item.getMenuNameSnapshot(), item.getQuantity(),
-							item.getUnitPrice());
+					System.out.printf("   └─ %-15s %d개 (단가: %,d원)\n", 
+							item.getMenuNameSnapshot(), item.getQuantity(), item.getUnitPrice());
 
-					// 선택된 세부 옵션 정보 출력
+					// 선택된 세부 옵션 정보 출력 (가시성 강화)
 					List<MenuOption> options = item.getOptions();
 					if (options != null && !options.isEmpty()) {
-						String optionStr = options.stream().map(MenuOption::getOptionName)
+						String optionStr = options.stream()
+								.map(MenuOption::getOptionName)
 								.collect(java.util.stream.Collectors.joining(", "));
-						System.out.printf("      [선택 옵션: %s]\n", optionStr);
+						System.out.printf("      ▶ [선택된 상세 옵션: %s]\n", optionStr);
 					}
 				}
 			}
-			System.out.println("-".repeat(85));
+			System.out.println("-".repeat(80));
 		}
 	}
 
@@ -95,12 +115,19 @@ public final class EndView {
 	public static void printPointHistory(Member member, List<PointHistory> history) {
 		System.out.println("\n===== [" + member.getPhone() + "] 님의 포인트 변동 내역 =====");
 		if (history == null || history.isEmpty()) {
-			System.out.println("포인트 변동 내역이 없습니다.");
+			System.out.println("  > 아직 포인트 변동 내역이 존재하지 않습니다.");
 		} else {
-			history.forEach(h -> System.out.println("  " + h.toString()));
+			System.out.printf("%-12s | %-10s | %s\n", "일시", "변동금액", "사유");
+			System.out.println("-".repeat(45));
+			java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MM-dd HH:mm");
+			for (PointHistory h : history) {
+				String amountStr = (h.getAmount() > 0 ? "+" : "") + String.format("%,d", h.getAmount());
+				System.out.printf("%-12s | %10s | %s\n", 
+						sdf.format(h.getCreatedAt()), amountStr, h.getReason());
+			}
 		}
-		System.out.println("-------------------------------------------");
-		System.out.printf("▶ 현재 보유 포인트: %,d원\n", member.getPointBalance());
+		System.out.println("-".repeat(45));
+		System.out.printf("▶ 현재 총 보유 포인트: %,d원\n", member.getPointBalance());
 	}
 
 	public static void printQuickOrder(Member member, Order order) {
@@ -142,7 +169,7 @@ public final class EndView {
 		System.out.println("===============================");
 	}
 
-	public static void printDateSalesReport(String periodTitle, int totalSales, Map<String, Integer> periodSales) {
+	public static void printDateSalesReport(String periodTitle, long totalSales, Map<String, Long> periodSales) {
 		System.out.println("\n" + "=".repeat(40));
 		System.out.println("      📅 [" + periodTitle + "]      ");
 		System.out.println("=".repeat(40));
@@ -153,7 +180,7 @@ public final class EndView {
 			System.out.println("  - 데이터 없음");
 		} else {
 			periodSales.forEach((period, sales) -> {
-				int barLength = Math.min(30, Math.max(0, sales / 2000));
+				int barLength = (int) Math.min(30L, Math.max(0L, sales / 2000L));
 				String bar = "■".repeat(barLength);
 				System.out.printf("%12s | %-30s (%,d원)\n", period, bar, sales);
 			});
@@ -161,7 +188,7 @@ public final class EndView {
 		System.out.println("=".repeat(40));
 	}
 
-	public static void printCategorySalesReport(Map<String, Integer> categorySales) {
+	public static void printCategorySalesReport(Map<String, Long> categorySales) {
 		System.out.println("\n" + "=".repeat(40));
 		System.out.println("      📂 [카테고리별 매출 분석]      ");
 		System.out.println("=".repeat(40));
@@ -169,7 +196,7 @@ public final class EndView {
 		if (categorySales == null || categorySales.isEmpty()) {
 			System.out.println("  - 데이터 없음");
 		} else {
-			int total = categorySales.values().stream().mapToInt(Integer::intValue).sum();
+			long total = categorySales.values().stream().mapToLong(Long::longValue).sum();
 			categorySales.forEach((cat, sales) -> {
 				double percent = (total > 0) ? (sales * 100.0 / total) : 0;
 				int barLength = (int) (percent / 3);
@@ -206,10 +233,10 @@ public final class EndView {
 		if (stats == null || stats.isEmpty()) {
 			System.out.println("  - 해당 기간의 데이터가 없습니다.");
 		} else {
-			System.out.printf("  총 주문 건수 : %,d건\n", (Integer) stats.getOrDefault("count", 0));
-			System.out.printf("  총 매출 금액 : %,d원\n", (Integer) stats.getOrDefault("amount", 0));
-			int count = (Integer) stats.getOrDefault("count", 0);
-			int amount = (Integer) stats.getOrDefault("amount", 0);
+			System.out.printf("  총 주문 건수 : %,d건\n", ((Number) stats.getOrDefault("count", 0L)).longValue());
+			System.out.printf("  총 매출 금액 : %,d원\n", ((Number) stats.getOrDefault("amount", 0L)).longValue());
+			long count = ((Number) stats.getOrDefault("count", 0L)).longValue();
+			long amount = ((Number) stats.getOrDefault("amount", 0L)).longValue();
 			if (count > 0) {
 				System.out.printf("  객단가(AVG) : %,d원\n", amount / count);
 			}
@@ -217,17 +244,17 @@ public final class EndView {
 		System.out.println("=".repeat(40));
 	}
 
-	public static void printHourlySalesReport(Map<Integer, Integer> hourlySales) {
+	public static void printHourlySalesReport(Map<Integer, Long> hourlySales) {
 		System.out.println("\n" + "=".repeat(40));
 		System.out.println("      🕒 [시간대별 매출 분석]      ");
 		System.out.println("=".repeat(40));
 		if (hourlySales == null || hourlySales.isEmpty()) {
 			System.out.println("  - 데이터 없음");
 		} else {
-			int maxSales = hourlySales.values().stream().mapToInt(Integer::intValue).max().orElse(1);
+			long maxSales = hourlySales.values().stream().mapToLong(Long::longValue).max().orElse(1L);
 			for (int hour = 0; hour < 24; hour++) {
-				int sales = hourlySales.getOrDefault(hour, 0);
-				int barLength = (sales * 25 / maxSales);
+				long sales = hourlySales.getOrDefault(hour, 0L);
+				int barLength = (int) (sales * 25 / maxSales);
 				String bar = "■".repeat(barLength);
 				System.out.printf("  %02d시 | %-25s (%,d원)\n", hour, bar, sales);
 			}
@@ -235,16 +262,16 @@ public final class EndView {
 		System.out.println("=".repeat(40));
 	}
 
-	public static void printDayOfWeekSalesReport(Map<String, Integer> daySales) {
+	public static void printDayOfWeekSalesReport(Map<String, Long> daySales) {
 		System.out.println("\n" + "=".repeat(40));
 		System.out.println("      📅 [요일별 매출 분석]      ");
 		System.out.println("=".repeat(40));
 		if (daySales == null || daySales.isEmpty()) {
 			System.out.println("  - 데이터 없음");
 		} else {
-			int maxSales = daySales.values().stream().mapToInt(Integer::intValue).max().orElse(1);
+			long maxSales = daySales.values().stream().mapToLong(Long::longValue).max().orElse(1L);
 			daySales.forEach((day, sales) -> {
-				int barLength = (sales * 25 / maxSales);
+				int barLength = (int) (sales * 25 / maxSales);
 				String bar = "■".repeat(barLength);
 				System.out.printf(" %-4s | %-25s (%,d원)\n", day, bar, sales);
 			});
@@ -303,9 +330,6 @@ public final class EndView {
 				System.out.printf("    - %s%n", menu.getDescription());
 			}
 		}
-		System.out.println(" 0. 뒤로");
-		System.out.println(" 8. 카트확인");
-		System.out.println(" 9. 주문하기");
 	}
 
 	public static void printOrderMenu(List<Menu> menus) {
