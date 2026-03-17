@@ -362,49 +362,70 @@ public class AdminServiceImpl implements AdminService {
 		}
 
 		String fileName = dirPath + "/cafe_sales_report_" + System.currentTimeMillis() + ".csv";
-		try (java.io.PrintWriter writer = new java.io.PrintWriter(new java.io.File(fileName), "MS949")) {
-			// 1. 헤더 및 요약
-			writer.println("--- 카페 키오스크 매출 통계 보고서 ---");
-			writer.println("생성일시," + new java.util.Date());
-			writer.println("총 누적 매출," + getTotalSales() + "원");
-			writer.println();
-
-			// 2. 일별 매출 추이
-			writer.println("[일별 매출 추이]");
-			writer.println("날짜,매출액");
-			getDailySales().forEach((date, sales) -> writer.println(date + "," + sales));
-			writer.println();
-
-			// 3. 카테고리별 매출
-			writer.println("[카테고리별 매출 분석]");
-			writer.println("카테고리,매출액");
-			getSalesByCategory().forEach((cat, sales) -> writer.println(cat + "," + sales));
-			writer.println();
-
-			// 4. 시간대별 매출
-			writer.println("[시간대별 매출 분석]");
-			writer.println("시간,매출액");
-			getHourlySales().forEach((hour, sales) -> writer.println(hour + "시," + sales));
-			writer.println();
-
-			// 5. 요일별 매출
-			writer.println("[요일별 매출 분석]");
-			writer.println("요일,매출액");
-			getDayOfWeekSales().forEach((day, sales) -> writer.println(day + "," + sales));
-			writer.println();
-
-			// 6. 우수 회원 Top 5
-			writer.println("[우수 회원 기여도 분석]");
-			writer.println("순위,휴대폰 번호,누적 결제액");
+		
+		try {
+			// 1. 데이터 먼저 수집 (쿼리 도중 오류 발생 시 파일 자체를 생성하지 않음)
+			long totalSales = getTotalSales();
+			Map<String, Long> categorySales = getSalesByCategory();
+			List<String> topMenus = getTopSellingMenus();
+			Map<String, Long> dailySales = getDailySales();
+			Map<Integer, Long> hourlySales = getHourlySales();
+			Map<String, Long> dayOfWeekSales = getDayOfWeekSales();
 			List<Map<String, Object>> topMembers = getTopSpenders(5);
-			for (int i = 0; i < topMembers.size(); i++) {
-				Map<String, Object> m = topMembers.get(i);
-				writer.println((i + 1) + "위," + m.get("phone") + "," + m.get("total"));
-			}
 
-			System.out.println("\n[성공] 매출 보고서가 생성되었습니다: " + fileName);
-		} catch (java.io.IOException e) {
-			throw new exception.InfrastructureException("CSV 파일 내보내기 중 오류가 발생했습니다.", e);
+			// 2. 수집 성공 시에만 파일 작성 시작
+			try (java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(
+					new java.io.FileOutputStream(fileName), "MS949");
+				 java.io.BufferedWriter bw = new java.io.BufferedWriter(osw);
+				 java.io.PrintWriter writer = new java.io.PrintWriter(bw)) {
+				
+				writer.println("--- 카페 키오스크 매출 통계 보고서 ---");
+				writer.println("생성일시," + new java.util.Date());
+				writer.println("총 누적 매출," + totalSales + "원");
+				writer.println();
+
+				writer.println("[일별 매출 추이 (최신 10건)]");
+				writer.println("날짜,매출액");
+				dailySales.forEach((date, sales) -> writer.println(date + "," + sales));
+				writer.println();
+
+				writer.println("[카테고리별 매출 분석]");
+				writer.println("카테고리,매출액");
+				categorySales.forEach((cat, sales) -> writer.println(cat + "," + sales));
+				writer.println();
+
+				writer.println("[메뉴별 판매 순위]");
+				writer.println("순위,메뉴 정보");
+				for (int i = 0; i < topMenus.size(); i++) {
+					writer.println((i + 1) + "위," + topMenus.get(i).trim());
+				}
+				writer.println();
+
+				writer.println("[시간대별 매출 분석]");
+				writer.println("시간,매출액");
+				hourlySales.forEach((hour, sales) -> writer.println(hour + "시," + sales));
+				writer.println();
+
+				writer.println("[요일별 매출 분석]");
+				writer.println("요일,매출액");
+				dayOfWeekSales.forEach((day, sales) -> writer.println(day + "," + sales));
+				writer.println();
+
+				writer.println("[우수 회원 기여도 분석]");
+				writer.println("순위,휴대폰 번호,누적 결제액");
+				for (int i = 0; i < topMembers.size(); i++) {
+					Map<String, Object> m = topMembers.get(i);
+					long total = ((Number) m.get("total")).longValue();
+					writer.println((i + 1) + "위," + m.get("phone") + "," + total + "원");
+				}
+
+				writer.flush(); // 명시적 플러시
+				System.out.println("\n[성공] 매출 보고서가 생성되었습니다: " + fileName);
+			}
+		} catch (Exception e) {
+			// 상세 에러 로그 출력 (데이터가 너무 많아 쿼리 타임아웃 발생 시 확인 가능)
+			e.printStackTrace();
+			throw new exception.InfrastructureException("CSV 내보내기 중 데이터 수집 또는 파일 쓰기 오류: " + e.getMessage(), e);
 		}
 	}
 }

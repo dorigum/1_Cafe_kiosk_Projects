@@ -214,11 +214,12 @@ public class MemberRepositoryImpl implements MemberRepository {
 		return null;
 	}
 
-	// 전체 회원 조회
+	// 전체 회원 조회 (ADMIN 우선 노출 + 최신 10명 제한)
 	@Override
 	public List<Member> getAllMembers() {
 		List<Member> members = new ArrayList<>();
-		String sql = "SELECT * FROM MEMBER ORDER BY member_id DESC";
+		// (role = 'ADMIN') DESC를 통해 ADMIN을 최상단으로 올리고, 그 후 member_id DESC 정렬
+		String sql = "SELECT * FROM MEMBER ORDER BY (role = 'ADMIN') DESC, member_id DESC LIMIT 10";
 		try (Connection conn = DBUtil.getConnection();
 				Statement stmt = conn.createStatement();
 				ResultSet rs = stmt.executeQuery(sql)) {

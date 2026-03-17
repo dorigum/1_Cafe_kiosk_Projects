@@ -38,7 +38,7 @@ public final class EndView {
 			return;
 		}
 
-		System.out.printf("%-6s | %-13s | %-10s | %-7s | %-10s\n", "ID", "전화번호", "보유 포인트", "등급", "가입일자");
+		System.out.printf("%-6s | %-13s | %-12s | %-7s | %-10s\n", "ID", "전화번호", "보유 포인트", "등급", "가입일자");
 		System.out.println("-".repeat(65));
 
 		java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
@@ -117,16 +117,16 @@ public final class EndView {
 		if (history == null || history.isEmpty()) {
 			System.out.println("  > 아직 포인트 변동 내역이 존재하지 않습니다.");
 		} else {
-			System.out.printf("%-12s | %-10s | %s\n", "일시", "변동금액", "사유");
-			System.out.println("-".repeat(45));
+			System.out.printf("%-12s | %-11s | %s\n", "일시", "변동금액", "사유");
+			System.out.println("-".repeat(50));
 			java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MM-dd HH:mm");
 			for (PointHistory h : history) {
-				String amountStr = (h.getAmount() > 0 ? "+" : "") + String.format("%,d", h.getAmount());
-				System.out.printf("%-12s | %10s | %s\n", 
+				String amountStr = (h.getAmount() > 0 ? "+" : "") + String.format("%,d원", h.getAmount());
+				System.out.printf("%-12s | %11s | %s\n", 
 						sdf.format(h.getCreatedAt()), amountStr, h.getReason());
 			}
 		}
-		System.out.println("-".repeat(45));
+		System.out.println("-".repeat(50));
 		System.out.printf("▶ 현재 총 보유 포인트: %,d원\n", member.getPointBalance());
 	}
 
@@ -170,22 +170,26 @@ public final class EndView {
 	}
 
 	public static void printDateSalesReport(String periodTitle, long totalSales, Map<String, Long> periodSales) {
-		System.out.println("\n" + "=".repeat(40));
+		System.out.println("\n" + "=".repeat(45));
 		System.out.println("      📅 [" + periodTitle + "]      ");
-		System.out.println("=".repeat(40));
+		System.out.println("=".repeat(45));
 		System.out.printf("▶ 누적 총 매출액: %,d원\n", totalSales);
-		System.out.println("-".repeat(40));
+		System.out.println("-".repeat(45));
 
 		if (periodSales == null || periodSales.isEmpty()) {
 			System.out.println("  - 데이터 없음");
 		} else {
+			// 상대적 스케일링을 위해 최대 매출액 산출
+			long maxSales = periodSales.values().stream().mapToLong(Long::longValue).max().orElse(1L);
+			
 			periodSales.forEach((period, sales) -> {
-				int barLength = (int) Math.min(30L, Math.max(0L, sales / 2000L));
+				// 최대 길이를 25로 제한하여 상대적 비율로 출력
+				int barLength = (int) (sales * 25 / maxSales);
 				String bar = "■".repeat(barLength);
-				System.out.printf("%12s | %-30s (%,d원)\n", period, bar, sales);
+				System.out.printf("%14s | %-25s (%,d원)\n", period, bar, sales);
 			});
 		}
-		System.out.println("=".repeat(40));
+		System.out.println("=".repeat(45));
 	}
 
 	public static void printCategorySalesReport(Map<String, Long> categorySales) {

@@ -131,6 +131,7 @@ public class OrderRepositoryImpl implements OrderRepository {
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
+                // 쉼표 구분을 제거하고 일반 숫자로 복구 (엑셀 셀 분리 방지)
                 topMenus.add(String.format("%-15s | %d개 판매", rs.getString("menu_name_snapshot"), rs.getInt("total_qty")));
             }
             return topMenus;
@@ -145,10 +146,13 @@ public class OrderRepositoryImpl implements OrderRepository {
 
     public Map<String, Long> getSalesByPeriod(String format) {
         Map<String, Long> stats = new LinkedHashMap<>();
-        String sql = "SELECT DATE_FORMAT(order_date, ?) as period, SUM(total_amount) as total "
-                     + "FROM ORDERS WHERE status = 'COMPLETED' "
-                     + "GROUP BY period "
-                     + "ORDER BY period ASC LIMIT 10";
+        // 최신 10개의 데이터를 가져온 후 시간순(ASC)으로 재정렬하여 트렌드 파악 용이하게 개선
+        String sql = "SELECT * FROM ("
+                     + "  SELECT DATE_FORMAT(order_date, ?) as period, SUM(total_amount) as total "
+                     + "  FROM ORDERS WHERE status = 'COMPLETED' "
+                     + "  GROUP BY period "
+                     + "  ORDER BY period DESC LIMIT 10"
+                     + ") AS recent_stats ORDER BY period ASC";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -321,9 +325,9 @@ public class OrderRepositoryImpl implements OrderRepository {
 
     public List<Order> getAllOrders() {
         List<Order> orders = new ArrayList<>();
-        // 1. 주문 기본 정보 및 주문자 정보 조회 (MEMBER JOIN) - 컬럼명 명시
+        // 전체 주문 조회 시 최신 10건만 조회하여 성능 최적화 (N+1 문제 완화)
         String orderSql = "SELECT o.order_id, o.member_id, o.total_amount, o.point_used, o.point_earned, o.status, o.order_date, m.phone " +
-                         "FROM ORDERS o LEFT JOIN MEMBER m ON o.member_id = m.member_id ORDER BY o.order_date DESC";
+                         "FROM ORDERS o LEFT JOIN MEMBER m ON o.member_id = m.member_id ORDER BY o.order_date DESC LIMIT 10";
         
         try (Connection conn = DBUtil.getConnection();
              Statement stmt = conn.createStatement();
